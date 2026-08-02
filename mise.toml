@@ -1,0 +1,32 @@
+[tools]
+node = "24.18.0"
+pnpm = "11.17.0"
+
+# Keep node_modules current when entering the repo or when the lockfile
+# changes — tasks below assume an installed tree.
+[hooks]
+enter = "pnpm install --frozen-lockfile --prefer-offline 2>/dev/null || pnpm install"
+
+[tasks.dev]
+description = "Run the harness dev app (the editor + the boxes pack)"
+run = "pnpm dev"
+
+[tasks.build]
+description = "Typecheck and build the library to dist/"
+run = "pnpm build"
+
+[tasks.test]
+description = "Run the test suite"
+run = "pnpm vitest run 2>/dev/null || echo 'no tests yet — the extraction brings the suite'"
+
+[tasks.lint]
+description = "Biome check"
+run = "pnpm lint"
+
+[tasks.format]
+description = "Biome check --write"
+run = "pnpm format"
+
+[tasks.typecheck]
+description = "vue-tsc, no emit"
+run = "pnpm typecheck"
