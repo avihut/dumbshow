@@ -1,0 +1,1404 @@
+/**
+ * Composer styles — everything under the .dx- prefix.
+ *
+ * The composer is a full-window editor (docs/composer.md, layout: false):
+ * ComposerApp stamps `dx-lock` on <html> while mounted so the document
+ * never scrolls behind the app. All colors resolve through VitePress theme
+ * tokens plus the daft brand tokens from custom.css, so both themes work
+ * without any composer-specific theme handling.
+ */
+
+html.dx-lock,
+html.dx-lock body {
+  overflow: hidden;
+  height: 100%;
+}
+
+.dx-app {
+  /* Composer-local aliases over the live theme tokens. */
+  --dx-line: var(--vp-c-divider);
+  --dx-panel: var(--vp-c-bg);
+  --dx-well: var(--vp-c-bg-soft);
+  --dx-sel: color-mix(in srgb, var(--daft-gold) 12%, var(--vp-c-bg));
+  --dx-teal: #1b9aaa;
+  --dx-purple: #8a63d2;
+  /* AA-safe text forms of the tone colors, per theme. */
+  --dx-teal-text: #0e7280;
+  --dx-purple-text: #6d48c0;
+
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  background: var(--dx-panel);
+  color: var(--vp-c-text-1);
+  font-family: var(--vp-font-family-base);
+  font-size: 13px;
+}
+
+html.dark .dx-app {
+  --dx-teal-text: #3fbccb;
+  --dx-purple-text: #ab8ce4;
+}
+
+/* ------------------------------- toolbar -------------------------------- */
+
+.dx-chrome {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--dx-line);
+  flex: none;
+}
+.dx-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--vp-c-text-2);
+  text-decoration: none;
+  border-radius: 8px;
+  padding: 5px 9px;
+}
+.dx-back:hover {
+  color: var(--vp-c-text-1);
+  background: var(--dx-well);
+}
+.dx-back svg {
+  width: 13px;
+  height: 13px;
+}
+.dx-doc {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.dx-title {
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 650;
+  color: var(--vp-c-text-1);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  padding: 3px 8px;
+  min-width: 60px;
+  max-width: 320px;
+}
+.dx-title:hover {
+  border-color: var(--dx-line);
+}
+.dx-title:focus {
+  border-color: var(--daft-gold);
+  outline: none;
+}
+.dx-filename {
+  font-size: 11.5px;
+  color: var(--vp-c-text-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.dx-spacer {
+  flex: 1;
+}
+.dx-chrome-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--vp-c-text-2);
+  border: 1px solid var(--dx-line);
+  background: none;
+  border-radius: 8px;
+  padding: 5px 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dx-chrome-btn:hover {
+  color: var(--vp-c-text-1);
+  border-color: var(--vp-c-text-3);
+}
+.dx-chrome-btn.primary {
+  background: var(--daft-gold);
+  border-color: var(--daft-gold);
+  color: #241b09;
+}
+.dx-chrome-btn.toggled {
+  color: var(--daft-gold-text);
+  border-color: color-mix(in srgb, var(--daft-gold) 50%, var(--dx-line));
+  background: var(--dx-sel);
+}
+.dx-chrome-btn svg {
+  width: 13px;
+  height: 13px;
+  flex: none;
+}
+.dx-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--dx-line);
+  background: none;
+  color: var(--vp-c-text-2);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.dx-icon-btn:hover {
+  color: var(--vp-c-text-1);
+  border-color: var(--vp-c-text-3);
+}
+.dx-icon-btn svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+.dx-chrome-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.dx-export-wrap {
+  position: relative;
+}
+.dx-export-pop {
+  position: absolute;
+  top: 34px;
+  right: 0;
+  z-index: 50;
+  border: 1px solid var(--dx-line);
+  border-radius: 10px;
+  box-shadow: 0 6px 22px rgba(33, 29, 23, 0.16);
+  background: var(--dx-panel);
+  min-width: 260px;
+  padding: 6px;
+}
+.dx-export-pop > button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--vp-c-text-1);
+  padding: 6px 9px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.dx-ex-hint {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 400;
+  color: var(--vp-c-text-3);
+}
+.dx-export-pop > button:hover {
+  background: var(--dx-well);
+}
+.dx-ex-note {
+  font-size: 10px;
+  color: var(--vp-c-text-3);
+  border-top: 1px dashed var(--dx-line);
+  margin: 5px 3px 2px;
+  padding: 6px 6px 2px;
+}
+
+/* ------------------------------ body layout ------------------------------ */
+
+.dx-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 272px minmax(0, 1fr) 300px;
+}
+.dx-body.no-side {
+  grid-template-columns: 0 minmax(0, 1fr) 300px;
+}
+
+.dx-side {
+  position: relative;
+  border-right: 1px solid var(--dx-line);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.dx-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  background: var(--dx-well);
+}
+.dx-insp {
+  border-left: 1px solid var(--dx-line);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  font-size: 12.5px;
+}
+
+.dx-side-label {
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--vp-c-text-3);
+  margin: 0;
+  font-weight: 650;
+}
+
+.dx-empty {
+  color: var(--vp-c-text-3);
+  font-size: 12px;
+  padding: 14px;
+  margin: 0;
+}
+
+/* ------------------------- left pane: timeline --------------------------- */
+
+.dx-body.side-min {
+  grid-template-columns: 30px minmax(0, 1fr) 300px;
+}
+.dx-body.side-min .dx-side {
+  align-items: stretch;
+  gap: 8px;
+  padding-top: 10px;
+}
+
+.dx-side-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 8px 12px 0;
+  flex: none;
+}
+.dx-label-btns {
+  display: inline-flex;
+  gap: 4px;
+}
+.dx-min {
+  border: 1px solid var(--dx-line);
+  background: none;
+  color: var(--vp-c-text-3);
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex: none;
+}
+.dx-min svg {
+  width: 11px;
+  height: 11px;
+}
+.dx-min:hover {
+  color: var(--vp-c-text-1);
+  border-color: var(--vp-c-text-3);
+}
+
+.dx-flap {
+  writing-mode: vertical-rl;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--daft-gold-text);
+  background: var(--dx-panel);
+  border: 1px solid color-mix(in srgb, var(--daft-gold) 40%, var(--dx-line));
+  border-left: 0;
+  border-radius: 0 7px 7px 0;
+  padding: 9px 4px;
+  cursor: pointer;
+  align-self: flex-start;
+}
+.dx-flap.in-pane {
+  margin: 8px 0 4px;
+}
+
+.dx-seq {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.dx-vtl {
+  position: relative;
+  padding: 8px 10px 10px 32px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+.dx-rail {
+  position: absolute;
+  left: 16px;
+  top: 6px;
+  bottom: 8px;
+  width: 5px;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      var(--dx-line) 0 1px,
+      transparent 1px 18px
+    )
+    left top / 5px 100%,
+    linear-gradient(var(--dx-line), var(--dx-line)) left top / 1px 100%;
+  background-repeat: no-repeat, no-repeat;
+}
+.dx-vrows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.dx-vrow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  border: 1px solid var(--dx-line);
+  background: var(--dx-panel);
+  border-radius: 7px;
+  font-family: var(--vp-font-family-mono);
+  font-size: 10.5px;
+  color: var(--vp-c-text-2);
+  padding: 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+  flex: none;
+}
+.dx-vrow b {
+  color: var(--daft-gold-text);
+  font-weight: 700;
+}
+.dx-vrest {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dx-vrow.sel {
+  border-color: var(--daft-gold);
+  box-shadow: 0 0 0 1px var(--daft-gold);
+  color: var(--vp-c-text-1);
+  background: var(--dx-sel);
+}
+.dx-vrow.live:not(.sel) {
+  box-shadow: inset 2px 0 0 var(--daft-gold);
+}
+.dx-vrow.dead {
+  opacity: 0.5;
+}
+.dx-vrow.beat {
+  border-style: dashed;
+  background: none;
+  height: 20px;
+  font-size: 10px;
+}
+.dx-vrow.beat b {
+  color: var(--vp-c-text-3);
+  font-weight: 600;
+}
+/* Events are dashed rows — world happenings, not daft verbs. */
+.dx-vrow.event {
+  border-style: dashed;
+  background: none;
+}
+.dx-vrow.event b {
+  color: var(--vp-c-text-2);
+  font-weight: 650;
+}
+.dx-edot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--vp-c-text-3);
+  flex: none;
+}
+.dx-vrow.agent .dx-edot {
+  background: var(--dx-purple);
+}
+.dx-skipped {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--daft-rust-text);
+  border: 1px solid color-mix(in srgb, var(--daft-rust) 40%, var(--dx-line));
+  border-radius: 4px;
+  padding: 0 4px;
+  flex: none;
+}
+.dx-row-acts {
+  position: absolute;
+  right: 3px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: none;
+  gap: 1px;
+  background: var(--dx-panel);
+  border-radius: 6px;
+  padding: 1px;
+}
+.dx-vrow:hover .dx-row-acts,
+.dx-vrow:focus-within .dx-row-acts {
+  display: inline-flex;
+}
+.dx-row-acts button {
+  border: 0;
+  background: none;
+  color: var(--vp-c-text-3);
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.dx-row-acts button:hover {
+  color: var(--vp-c-text-1);
+  background: var(--dx-well);
+}
+.dx-row-acts button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.dx-row-acts svg {
+  width: 11px;
+  height: 11px;
+}
+
+/* Drag-and-drop: draggables opt out of touch scrolling and selection; the
+   insertion line and ghost render from controller state. */
+.dx-chip,
+.dx-vrow,
+.dx-chap {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.dx-drop-line {
+  position: absolute;
+  left: 26px;
+  right: 8px;
+  height: 0;
+  z-index: 5;
+  border-top: 2px dashed var(--daft-gold);
+  pointer-events: none;
+}
+.dx-drop-line::before,
+.dx-drop-line::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--daft-gold);
+}
+.dx-drop-line::before {
+  left: -3px;
+}
+.dx-drop-line::after {
+  right: -3px;
+}
+.dx-ghost {
+  position: fixed;
+  z-index: 60;
+  font-family: var(--vp-font-family-mono);
+  font-size: 10.5px;
+  color: var(--vp-c-text-1);
+  background: var(--dx-panel);
+  border: 1px solid var(--daft-gold);
+  border-radius: 6px;
+  padding: 3px 9px;
+  box-shadow: 0 4px 14px rgba(33, 29, 23, 0.18);
+  transform: rotate(-4deg);
+  pointer-events: none;
+}
+.dx-ghost b {
+  color: var(--daft-gold-text);
+  font-weight: 700;
+}
+
+/* Chapters: bare gold notches on the rail; names bloom on hover. */
+.dx-chap {
+  position: relative;
+  height: 12px;
+  flex: none;
+}
+.dx-notch {
+  position: absolute;
+  left: -19px;
+  top: 5px;
+  width: 11px;
+  height: 2.5px;
+  background: var(--daft-gold);
+  border: 0;
+  border-radius: 1px;
+  cursor: pointer;
+  padding: 0;
+}
+.dx-chap.sel .dx-notch {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--daft-gold) 35%, transparent);
+}
+.dx-chap-name {
+  position: absolute;
+  left: 0;
+  top: -3px;
+  z-index: 6;
+  transform: translate(-6px, 0);
+  font-family: var(--vp-font-family-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--daft-gold-text);
+  white-space: nowrap;
+  background: var(--dx-panel);
+  border: 1px solid color-mix(in srgb, var(--daft-gold) 40%, var(--dx-line));
+  border-radius: 5px;
+  padding: 1px 7px;
+  opacity: 0;
+  pointer-events: none;
+  cursor: pointer;
+}
+.dx-vtl:hover .dx-chap-name,
+.dx-vtl:focus-within .dx-chap-name,
+.dx-chap.sel .dx-chap-name {
+  opacity: 1;
+  transform: translate(0, 0);
+  pointer-events: auto;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .dx-chap-name {
+    transition:
+      opacity 0.18s ease,
+      transform 0.24s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+  }
+}
+
+/* -------------------------- left pane: catalog --------------------------- */
+
+.dx-cat {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.dx-cat-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 10px 8px;
+  border-top: 1px solid var(--dx-line);
+}
+.dx-cat-search {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--dx-line);
+  border-radius: 7px;
+  padding: 3px 8px;
+  color: var(--vp-c-text-3);
+  background: var(--dx-panel);
+}
+.dx-cat-search svg {
+  width: 11px;
+  height: 11px;
+  flex: none;
+}
+.dx-cat-search input {
+  border: 0;
+  background: none;
+  color: var(--vp-c-text-1);
+  font-family: inherit;
+  font-size: 11.5px;
+  width: 100%;
+  outline: none;
+  padding: 0;
+}
+.dx-cat-min {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+}
+.dx-cat-min svg {
+  width: 12px;
+  height: 12px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .dx-cat-min svg {
+    transition: transform 0.18s ease;
+  }
+}
+.dx-cat-min.closed svg {
+  transform: rotate(180deg);
+}
+.dx-cat-body {
+  padding: 0 10px 12px;
+  overflow-y: auto;
+}
+.dx-cat-body h4 {
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--vp-c-text-3);
+  margin: 10px 2px 5px;
+  font-weight: 650;
+}
+.dx-cat-body h4:first-child {
+  margin-top: 2px;
+}
+.dx-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.dx-chip {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10.5px;
+  color: var(--daft-gold-text);
+  background: var(--dx-panel);
+  border: 1px solid var(--dx-line);
+  border-radius: 6px;
+  padding: 2px 8px;
+  cursor: grab;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.dx-chip:hover:not(:disabled) {
+  border-color: var(--daft-gold);
+  color: var(--vp-c-text-1);
+  background: var(--dx-sel);
+}
+.dx-chip:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.dx-chip.meta {
+  border-style: dashed;
+  color: var(--vp-c-text-2);
+}
+.dx-chip.ev {
+  border-style: dashed;
+  color: var(--vp-c-text-2);
+  gap: 5px;
+}
+.dx-evdot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--vp-c-text-3);
+}
+.dx-evdot.agent {
+  background: var(--dx-purple);
+}
+.dx-chip.ent {
+  color: var(--vp-c-text-1);
+}
+.dx-chip i {
+  width: 8px;
+  height: 8px;
+  flex: none;
+}
+.dx-i-repo {
+  border-radius: 50%;
+  background: var(--vp-c-text-1);
+}
+.dx-i-wt {
+  border-radius: 50%;
+  border: 1.6px solid var(--vp-c-text-1);
+}
+.dx-i-agent {
+  border-radius: 2.5px;
+  background: linear-gradient(160deg, #9d74e8, #6a48c4);
+}
+.dx-i-rel {
+  height: 0;
+  width: 12px;
+  border-top: 2px dashed var(--dx-teal);
+}
+.dx-cat-hint {
+  font-size: 10.5px;
+  color: var(--vp-c-text-3);
+  padding: 8px 12px 10px;
+  border-top: 1px dashed var(--dx-line);
+  margin: 0;
+}
+
+/* ---------------------- right pane: state + attributes ------------------- */
+
+.dx-insp-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 12px 12px;
+  flex: 1;
+}
+.dx-rtabs {
+  display: flex;
+  gap: 1px;
+  border-bottom: 1px solid var(--dx-line);
+  margin: 0 -12px 0;
+  padding: 0 8px;
+  flex: none;
+}
+.dx-rtabs button {
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--vp-c-text-3);
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 9px 8px 8px;
+  cursor: pointer;
+}
+.dx-rtabs button.on {
+  color: var(--vp-c-text-1);
+  border-bottom-color: var(--daft-gold);
+}
+.dx-rtabs button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.dx-split {
+  border: 0;
+  border-top: 1px dashed var(--dx-line);
+  margin: 10px -2px;
+}
+.dx-attrs h3 {
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--vp-c-text-3);
+  margin: 2px 2px 8px;
+  font-weight: 650;
+}
+.dx-attrs-hint,
+.dx-attrs-note {
+  font-size: 11px;
+  color: var(--vp-c-text-3);
+  margin: 6px 0 0;
+}
+.dx-kv {
+  display: flex;
+  justify-content: space-between;
+  color: var(--vp-c-text-2);
+  font-size: 12px;
+  padding: 2px 0;
+}
+.dx-kv span:last-child {
+  color: var(--vp-c-text-3);
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+}
+
+/* State views: World rows, the daft registry, the Files tree. */
+.dx-view {
+  padding: 8px 0 2px;
+}
+.dx-view-h {
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--vp-c-text-3);
+  margin: 10px 2px 6px;
+  font-weight: 650;
+}
+.dx-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.dx-trow,
+.dx-crow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 7px;
+  border: 0;
+  background: none;
+  border-radius: 7px;
+  color: var(--vp-c-text-2);
+  font-family: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+.dx-trow.repo,
+.dx-crow {
+  font-weight: 650;
+  color: var(--vp-c-text-1);
+  margin-top: 4px;
+}
+.dx-trow.wt {
+  padding-left: 22px;
+}
+.dx-trow.sel,
+.dx-crow.sel,
+.dx-frow.sel {
+  background: var(--dx-sel);
+  color: var(--vp-c-text-1);
+}
+.dx-trow:hover,
+.dx-crow:hover,
+.dx-frow:hover {
+  background: var(--dx-well);
+}
+.dx-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--vp-c-text-1);
+  flex: none;
+}
+.dx-dot.gold {
+  background: var(--daft-gold);
+}
+.dx-dot.hollow {
+  background: var(--dx-well);
+  border: 1.5px solid var(--vp-c-text-3);
+}
+.dx-agent-chip {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  flex: none;
+  background: linear-gradient(160deg, #9d74e8, #6a48c4);
+}
+.dx-grow {
+  flex: 1;
+}
+.dx-port {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10px;
+  color: var(--vp-c-text-3);
+  border: 1px solid var(--dx-line);
+  border-radius: 5px;
+  padding: 0 4px;
+}
+.dx-rel-line {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--vp-c-text-2);
+  padding: 3px 7px;
+}
+.dx-rel-dash {
+  width: 16px;
+  border-top: 2px dashed var(--dx-teal);
+  flex: none;
+}
+.dx-crow .dx-path {
+  margin-left: auto;
+  font-family: var(--vp-font-family-mono);
+  font-size: 10.5px;
+  color: var(--vp-c-text-3);
+  font-weight: 400;
+}
+.dx-ftree {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: var(--vp-c-text-2);
+  display: flex;
+  flex-direction: column;
+}
+.dx-frow {
+  white-space: pre;
+  padding: 0 7px;
+  border: 0;
+  background: none;
+  border-radius: 6px;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.dx-frow.dir {
+  color: var(--vp-c-text-1);
+  font-weight: 600;
+}
+.dx-frow.cwd {
+  box-shadow: inset 2px 0 0 var(--daft-gold);
+}
+.dx-attrs-skip {
+  font-size: 11px;
+  color: var(--daft-rust-text);
+  border: 1px dashed color-mix(in srgb, var(--daft-rust) 40%, var(--dx-line));
+  border-radius: 7px;
+  padding: 6px 8px;
+  margin: 0 0 9px;
+}
+.dx-insp-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.dx-insp-head b {
+  font-size: 13px;
+}
+.dx-tag {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10px;
+  color: var(--daft-gold-text);
+  border: 1px solid color-mix(in srgb, var(--daft-gold) 45%, var(--dx-line));
+  background: var(--dx-sel);
+  border-radius: 5px;
+  padding: 1px 6px;
+}
+.dx-mini {
+  margin-left: auto;
+  display: inline-flex;
+  gap: 2px;
+}
+.dx-mini button {
+  border: 0;
+  background: none;
+  color: var(--vp-c-text-3);
+  padding: 2px 4px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.dx-mini button:hover {
+  color: var(--vp-c-text-1);
+  background: var(--dx-well);
+}
+.dx-mini svg {
+  width: 13px;
+  height: 13px;
+  display: block;
+}
+.dx-syntax {
+  display: block;
+  font-family: var(--vp-font-family-mono);
+  font-size: 10.5px;
+  color: var(--vp-c-text-3);
+  margin: 0 0 9px;
+}
+.dx-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 9px;
+}
+.dx-field label {
+  font-size: 11px;
+  color: var(--vp-c-text-3);
+}
+.dx-field input,
+.dx-field select {
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  color: var(--vp-c-text-1);
+  border: 1px solid var(--dx-line);
+  background: var(--dx-panel);
+  border-radius: 7px;
+  padding: 4px 8px;
+}
+.dx-field input:focus,
+.dx-field select:focus {
+  border-color: var(--daft-gold);
+  outline: none;
+}
+.dx-swrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+.dx-swrow > span {
+  color: var(--vp-c-text-2);
+  font-size: 12.5px;
+}
+.dx-sw {
+  width: 30px;
+  height: 17px;
+  border-radius: 999px;
+  border: 1px solid var(--dx-line);
+  background: var(--dx-well);
+  position: relative;
+  flex: none;
+  cursor: pointer;
+  padding: 0;
+}
+.dx-sw i {
+  position: absolute;
+  top: 1.5px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--vp-c-text-3);
+}
+.dx-sw.on {
+  background: var(--dx-sel);
+  border-color: color-mix(in srgb, var(--daft-gold) 50%, var(--dx-line));
+}
+.dx-sw.on i {
+  left: 14px;
+  background: var(--daft-gold);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .dx-sw i {
+    transition:
+      left 0.15s ease,
+      background 0.15s ease;
+  }
+}
+
+/* -------------------------------- notices -------------------------------- */
+
+.dx-notice {
+  position: absolute;
+  top: 52px;
+  right: 14px;
+  z-index: 30;
+  font-size: 12px;
+  color: var(--vp-c-text-1);
+  background: var(--dx-panel);
+  border: 1px solid color-mix(in srgb, var(--daft-gold) 45%, var(--dx-line));
+  border-radius: 8px;
+  padding: 6px 11px;
+  box-shadow: 0 4px 14px rgba(33, 29, 23, 0.14);
+  max-width: 340px;
+}
+.dx-fade-enter-from,
+.dx-fade-leave-to {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .dx-fade-enter-active,
+  .dx-fade-leave-active {
+    transition: opacity 0.2s ease;
+  }
+}
+
+/* --------------------------------- stage --------------------------------- */
+
+.dx-canvas-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+.dx-canvas-wrap canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.dx-canvas-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  max-width: 340px;
+  margin: 0 auto;
+}
+
+/* ------------------------------- terminal -------------------------------- */
+
+.dx-term {
+  position: relative;
+  border-top: 1px solid var(--dx-line);
+  background: var(--dx-panel);
+  padding: 9px 34px 10px 14px;
+  font-family: var(--vp-font-family-mono);
+  font-size: 11.5px;
+  line-height: 1.75;
+  height: 148px;
+  overflow-y: auto;
+  flex: none;
+  scrollbar-width: thin;
+}
+.dx-term-min {
+  position: sticky;
+  top: 0;
+  float: right;
+  margin-right: -24px;
+}
+.dx-term-flap {
+  position: absolute;
+  left: 10px;
+  bottom: 0;
+  z-index: 10;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--daft-gold-text);
+  background: var(--dx-panel);
+  border: 1px solid color-mix(in srgb, var(--daft-gold) 40%, var(--dx-line));
+  border-bottom: 0;
+  border-radius: 7px 7px 0 0;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.dx-tline {
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--vp-c-text-2);
+  border-radius: 5px;
+  padding: 0 4px;
+}
+.dx-tline.is-cmd {
+  cursor: pointer;
+  color: var(--vp-c-text-1);
+}
+.dx-tline.is-cmd:hover {
+  background: var(--dx-sel);
+}
+.dx-tline.is-ok {
+  color: var(--dx-teal-text);
+}
+.dx-tline.is-dim {
+  color: var(--vp-c-text-3);
+}
+.dx-tline.is-agent {
+  color: var(--dx-purple-text);
+}
+.dx-tline.is-rust {
+  color: var(--daft-rust-text);
+}
+.dx-prompt {
+  color: var(--vp-c-text-3);
+}
+.dx-verb {
+  color: var(--daft-gold-text);
+  font-weight: 700;
+}
+.dx-caret {
+  display: inline-block;
+  width: 7px;
+  height: 13px;
+  background: var(--daft-gold);
+  vertical-align: -2px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .dx-caret {
+    animation: dx-blink 1.05s steps(1) infinite;
+  }
+  @keyframes dx-blink {
+    50% {
+      opacity: 0;
+    }
+  }
+}
+.dx-term-hint {
+  color: var(--vp-c-text-3);
+  font-family: var(--vp-font-family-base);
+  font-size: 11.5px;
+  margin: 2px 0 0;
+}
+.dx-tline.hiddenop {
+  opacity: 0.55;
+}
+.dx-eye {
+  border: 0;
+  background: none;
+  color: var(--vp-c-text-3);
+  padding: 0 2px;
+  margin-left: 8px;
+  cursor: pointer;
+  vertical-align: -2px;
+  visibility: hidden;
+}
+.dx-eye svg {
+  width: 12px;
+  height: 12px;
+  display: inline-block;
+}
+.dx-tline:hover .dx-eye,
+.dx-tline.hiddenop .dx-eye {
+  visibility: visible;
+}
+.dx-eye:hover {
+  color: var(--vp-c-text-1);
+}
+.dx-shell-input {
+  display: flex;
+  align-items: baseline;
+  cursor: text;
+}
+.dx-shell-input input {
+  flex: 1;
+  border: 0;
+  background: none;
+  outline: none;
+  color: var(--vp-c-text-1);
+  font: inherit;
+  padding: 0;
+  caret-color: var(--daft-gold);
+}
+
+/* ------------------------------- player bar ------------------------------ */
+
+.dx-playbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-top: 1px solid var(--dx-line);
+  background: var(--dx-panel);
+  padding: 8px 12px;
+  flex: none;
+}
+.dx-tbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--vp-c-text-1);
+  border-radius: 8px;
+  cursor: pointer;
+  flex: none;
+  padding: 0;
+}
+.dx-tbtn:hover:not(:disabled) {
+  background: var(--dx-well);
+}
+.dx-tbtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.dx-tbtn.big {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--dx-line);
+  background: var(--dx-panel);
+}
+.dx-tbtn.toggled {
+  color: var(--daft-gold-text);
+  border-color: color-mix(in srgb, var(--daft-gold) 50%, var(--dx-line));
+  background: var(--dx-sel);
+}
+.dx-tbtn svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+}
+.dx-tbtn.big svg {
+  width: 17px;
+  height: 17px;
+}
+.dx-ttime {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+  color: var(--vp-c-text-2);
+  font-variant-numeric: tabular-nums;
+  margin: 0 8px 0 6px;
+  white-space: nowrap;
+}
+.dx-ttime span {
+  color: var(--vp-c-text-3);
+}
+.dx-scrub {
+  position: relative;
+  flex: 1;
+  height: 24px;
+  cursor: pointer;
+  touch-action: none;
+  min-width: 120px;
+}
+.dx-sbase {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 11px;
+  height: 3px;
+  background: var(--dx-line);
+  border-radius: 2px;
+}
+.dx-sfill {
+  position: absolute;
+  left: 0;
+  top: 11px;
+  height: 3px;
+  background: var(--daft-gold);
+  border-radius: 2px;
+  opacity: 0.45;
+}
+.dx-snotch {
+  position: absolute;
+  top: 7px;
+  width: 2px;
+  height: 11px;
+  background: var(--daft-gold);
+  border: 0;
+  border-radius: 1px;
+  z-index: 2;
+  cursor: pointer;
+  padding: 0;
+}
+.dx-knob {
+  position: absolute;
+  top: 6px;
+  margin-left: -6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 3.5px;
+  background: var(--daft-gold);
+  transform: rotate(45deg);
+  box-shadow: 0 1px 3px rgba(33, 29, 23, 0.3);
+  z-index: 3;
+  pointer-events: none;
+}
+.dx-schap {
+  top: auto;
+  bottom: 22px;
+  transform: translate(-6px, 5px);
+}
+.dx-playbar:hover .dx-schap,
+.dx-playbar:focus-within .dx-schap {
+  opacity: 1;
+  transform: translate(0, 0);
+  pointer-events: auto;
+}
+.dx-speed {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+  color: var(--vp-c-text-2);
+  border: 1px solid var(--dx-line);
+  background: var(--dx-panel);
+  border-radius: 7px;
+  padding: 3px 6px;
+  margin-left: 6px;
+}
+
+/* --------------------------------- focus --------------------------------- */
+
+.dx-app :is(button, a, input, [tabindex="0"]):focus-visible {
+  outline: 2px solid var(--daft-gold);
+  outline-offset: 2px;
+}
+
+/* Motion is opt-in: transitions/animations are declared inside
+   `prefers-reduced-motion: no-preference` blocks where they appear, so
+   reduced-motion needs no override rules. */

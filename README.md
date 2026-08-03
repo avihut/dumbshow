@@ -12,17 +12,16 @@ words — which is exactly what a pack's scenes do.
 
 ## Status
 
-Pre-release. The machinery is being extracted from the
-[daft](https://github.com/avihut/daft) documentation composer, where it was
-built and hardened behind a language-pack seam with a full characterization
-test net. Until the extraction lands here, this repository carries the
-project scaffolding; the first working release will be `0.1.0` on npm as
-`@avihut/dumbshow`.
+Pre-release. The machinery was built and hardened inside the
+[daft](https://github.com/avihut/daft) documentation composer behind a
+language-pack seam with a full characterization test net, and now lives
+here. The first release is `0.1.0` on npm as `@avihut/dumbshow`.
 
-- `src/` — the package: engine, render core, editor, exports (arrives with
-  the extraction).
+- `src/` — the package: the language contract, engine, render core,
+  transcript, the editor and its document model, and the exports.
 - `harness/` — a small dev app mounting the editor with the **boxes**
-  reference pack: the second language that keeps the pack interface honest.
+  reference pack: the second language that keeps the pack interface honest
+  (`mise run dev`).
 
 ## Using it
 

@@ -6,53 +6,24 @@
  * daft pack implements richly, boxes implements minimally, so anything
  * daft-shaped that leaks into the generic machinery fails here first.
  *
- * The local `DiagramLanguage`-shaped types below are placeholders; the
- * extraction replaces them with `import type { ... } from "../src"` and
- * the harness typechecks against the real contract.
+ * The pack types itself against the real contract — `DiagramLanguage`
+ * from `../src` — so the whole hook surface typechecks here.
  *
  * Document format v1 carries the daft-shaped seed schema, so the boxes
  * pack keeps seeds empty (world() ignores the seed) — a generic seed
  * schema is the planned document-version bump.
  */
 
-/* ------------------------- contract placeholders ------------------------- */
+import type {
+  DiagramLanguage,
+  OpSpecOf,
+  ParseOutcomeOf,
+  StepDef,
+  VerbArgs,
+} from "../src";
 
-export interface FieldSpec {
-  key: string;
-  label: string;
-  kind: "text" | "choice";
-  choices?: string[];
-  value: string;
-}
-
-type VerbArgs = Record<string, unknown>;
-
-interface OpSpec {
-  id: string;
-  kind: "verb" | "event";
-  typedOnly?: boolean;
-  label: string;
-  syntax: string;
-  summary: string;
-  available(world: World): boolean;
-  fields(world: World): FieldSpec[];
-  command(world: World, args: VerbArgs): string | null;
-  run(world: World, args: VerbArgs): Step;
-}
-
-interface Step {
-  title: string;
-  cam: { x: number; y: number; w: number; h: number };
-  beats: Beat[];
-  silent?: boolean;
-}
-
-type Beat =
-  | { cmd: string }
-  | { out: string; tone?: "ok" | "dim" | "agent" | "rust" }
-  | { act: Act }
-  | { pause: number }
-  | { cam: { x: number; y: number; w: number; h: number } };
+type Step = StepDef<Act>;
+type OpSpec = OpSpecOf<World, Step>;
 
 /* --------------------------------- world --------------------------------- */
 
@@ -220,7 +191,7 @@ interface DrawFrame {
   palette: Palette;
   cams: { at: number; rect: { x: number; y: number; w: number; h: number } }[];
   reduced: boolean;
-  hits?: Hit[];
+  hits: Hit[];
 }
 
 function drawScene(ctx: CanvasRenderingContext2D, frame: DrawFrame): void {
@@ -283,7 +254,7 @@ function drawScene(ctx: CanvasRenderingContext2D, frame: DrawFrame): void {
     ctx.globalAlpha = k;
     ctx.fillText(box.name, sx(box.x), sy(box.y) + half + 12);
     if (box.removed === undefined)
-      frame.hits?.push({ name: box.name, sx: sx(box.x), sy: sy(box.y), r: 20 });
+      frame.hits.push({ name: box.name, sx: sx(box.x), sy: sy(box.y), r: 20 });
   }
 
   for (const pulse of scene.pulses) {
@@ -478,10 +449,7 @@ const OPS: OpSpec[] = [
 
 /* --------------------------------- shell ---------------------------------- */
 
-function parseCommand(
-  line: string,
-  world: World,
-): { ok: true; op: string; args: VerbArgs } | { ok: false; error: string } {
+function parseCommand(line: string, world: World): ParseOutcomeOf {
   const parts = line.trim().split(/\s+/);
   if (parts[0] !== "box")
     return { ok: false, error: "boxes speak `box <verb>`" };
@@ -516,11 +484,10 @@ function parseCommand(
 /* --------------------------------- pack ----------------------------------- */
 
 /**
- * Shaped to satisfy dumbshow's DiagramLanguage<World, Act, Scene, Step>.
  * Seeds stay empty under document format v1 (its seed schema belongs to
  * the daft pack); placements pass through untouched.
  */
-export const BOXES_PACK = {
+export const BOXES_PACK: DiagramLanguage<World, Act, Scene, Step> = {
   ops: OPS,
   emptyWorld,
   scene: { createScene, applyAct, drawScene, camFor, readPalette, pick },
@@ -552,4 +519,5 @@ export const BOXES_PACK = {
   },
   parseCommand,
   shellVerb: (text: string): string => (text.startsWith("box") ? "box" : ""),
+  shellInputLabel: "Type a box command — it lands on the timeline",
 };
