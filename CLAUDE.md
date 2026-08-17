@@ -51,9 +51,17 @@ behavior; do not break parity casually.
   detached canvases use grayscale text antialiasing — correct for portable
   files, don't "fix" it.
 - **Host chrome is props.** `ComposerApp` takes `back`, `isDark` (a writable
-  ref), `devHandle` (window player handle — hosts gate it on their own dev
-  mode), and `fileTag` (draft key + `<slug>.<tag>.json` suffix; default
-  "dumbshow"). Add host concerns as props with defaults, never as imports.
+  ref — hosts must pass the ref itself, e.g. bound as a property access so
+  Vue's template unwrapping doesn't collapse it to a boolean), `devHandle`
+  (window player handle — hosts gate it on their own dev mode), and
+  `fileTag` (draft key + `<slug>.<tag>.json` suffix; default "dumbshow").
+  Add host concerns as props with defaults, never as imports.
+- **The layout is locked** (settled in a design round with the daft docs —
+  do not rearrange): LEFT the timeline over the docked catalog, each with a
+  minimize chevron and edge-flap restore, both-minimized (or the direct
+  control) collapsing the sidepane; CENTER canvas over the shell; RIGHT the
+  host's inspector over the always-visible attributes form; BOTTOM the
+  player bar only, hidden by the toolbar's Scrubber toggle.
 
 ## Theming contract (v0)
 
