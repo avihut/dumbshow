@@ -39,7 +39,7 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc -p tsconfig.build.json && vite build",
+    "build": "vite build && vue-tsc -p tsconfig.build.json",
     "typecheck": "vue-tsc --noEmit",
     "lint": "biome check .",
     "format": "biome check --write ."
