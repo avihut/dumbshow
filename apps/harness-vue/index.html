@@ -23,13 +23,18 @@
          overridden token is the host's in BOTH themes — hence the dark rule.
 
          --dx-on-accent is the ink on an accent-filled surface, and taking the
-         accent means taking it too: white reads on this blue (5.59:1) but not
+         accent means taking it too: white reads on this blue (8.07:1) but not
          on the default gold (3.02:1), and not on the pale blue this file uses
-         in dark mode (2.44:1) — which is why the two themes disagree here. */
+         in dark mode (2.44:1) — which is why the two themes disagree here.
+
+         The light accent is deeper than a blue would need to be for AA alone.
+         Light text on a colour fill reads thinner than dark text at 12px, so
+         a ratio that passes for dark-on-gold (5.6:1) still looks washed out
+         as white-on-blue; this one is AAA (8.07:1) and reads crisply. */
       :root {
         color-scheme: light dark;
-        --dx-accent: #2f66bd;
-        --dx-accent-text: #2c62ad;
+        --dx-accent: #1b4d9e;
+        --dx-accent-text: #1b4d9e;
         --dx-on-accent: #ffffff;
       }
       html.dark {
