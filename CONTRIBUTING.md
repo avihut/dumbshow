@@ -23,24 +23,26 @@ Unsigned commits cannot be merged.
 
 - `mise run ci` passes — lint, typecheck, build, test. The PR checks run
   exactly these tasks, so a red check names the task that fails locally.
-- If the package changed (anything under `src/`, `package.json`, the
-  lockfile, or the build/TypeScript config), add a changeset:
+- If a published package changed (anything under `packages/core/` or
+  `packages/vue/`, or the lockfile), add a changeset:
 
   ```sh
   pnpm changeset
   ```
 
-  Answer the two prompts and commit the file it writes under `.changeset/`.
-  Rule of thumb while dumbshow is 0.x: a change to the `DiagramLanguage`
+  Answer the prompts — name the package(s) you touched; the two public
+  packages version together, so one changeset is enough — and commit the
+  file it writes under `.changeset/`. Rule of thumb while dumbshow is 0.x: a change to the `DiagramLanguage`
   contract or the document format is a **minor** bump, anything else a
   **patch**. Write the summary for the CHANGELOG reader. The `changeset`
   check enforces this; a maintainer applies the `skip-changeset` label when
   nothing user-facing changed.
 - Keep the language-pack seam honest: nothing in the generic machinery may
-  name a concrete language's concepts. The reference `boxes` pack in
-  `harness/` exists to prove the interface — if your change only works for
-  one pack, it belongs in that pack. When you add a hook to the contract,
-  implement it in the boxes pack in the same change.
+  name a concrete language's concepts, and nothing in `@dumbshow/core` may
+  import a UI framework. The reference `boxes` pack in `packages/boxes`
+  exists to prove the interface — if your change only works for one pack,
+  it belongs in that pack. When you add a hook to the contract, implement
+  it in the boxes pack in the same change.
 - Conventional commit subjects (`feat:`, `fix:`, `docs:`, …); PRs are
   squash-merged with the PR title as the commit subject.
 - Every GitHub Action reference stays pinned to a full commit SHA (the
@@ -50,8 +52,8 @@ Unsigned commits cannot be merged.
 
 You never bump the version. Merged changesets accumulate in a
 `chore: version packages` pull request that the release bot keeps current;
-a maintainer merging it publishes to npm through trusted publishing, tags
-the release, and writes the GitHub Release. Your changeset summary is what
+a maintainer merging it publishes both packages to npm through trusted
+publishing, tags each, and writes the GitHub Releases. Your changeset summary is what
 appears in the CHANGELOG and the release notes.
 
 ## License of contributions

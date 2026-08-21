@@ -9,9 +9,10 @@ CHANGELOG.md), and merging that PR publishes.
 pnpm changeset        # answer two prompts; commit the file it writes
 ```
 
-Rules of thumb for a 0.x package: a change to the `DiagramLanguage`
-contract or the document format is a **minor** bump; anything else a
-**patch**. Write the summary for the CHANGELOG reader — what changed for a
+Name the package(s) a change touches — `@dumbshow/core`, `@dumbshow/vue`,
+or both; they are a `fixed` group and version together. Rules of thumb for
+a 0.x package: a change to the `DiagramLanguage` contract or the document
+format is a **minor** bump; anything else a **patch**. Write the summary for the CHANGELOG reader — what changed for a
 consumer, not how.
 
 Docs: https://github.com/changesets/changesets
