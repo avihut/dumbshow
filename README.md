@@ -1,5 +1,9 @@
 # dumbshow
 
+[![CI](https://github.com/avihut/dumbshow/actions/workflows/ci.yml/badge.svg)](https://github.com/avihut/dumbshow/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/%40avihut%2Fdumbshow)](https://www.npmjs.com/package/@avihut/dumbshow)
+[![License: FSL-1.1-MIT](https://img.shields.io/badge/license-FSL--1.1--MIT-3b5bdb)](./LICENSE.md)
+
 A semantic-animation composer. A **language pack** defines what exists
 (entities), what can be said about it (verbs and events), and what happenings
 look like (acts, scene state, drawing). dumbshow provides everything around
@@ -46,12 +50,20 @@ Requires [mise](https://mise.jdx.dev) (or match the tool versions in
 
 ```sh
 mise run dev        # harness dev app
-mise run build      # typecheck + library build to dist/
-mise run test       # test suite
+mise run build      # library build to dist/ (vite, then vue-tsc declarations)
+mise run test       # vitest suite (tests/)
 mise run lint       # biome check
 mise run format     # biome write
 mise run typecheck  # vue-tsc, no emit
+mise run changeset  # declare a change and its semver bump
+mise run ci         # everything the PR checks run
 ```
+
+Changes ship through [changesets](./.changeset/README.md): a PR that changes
+the package adds a changeset, the release bot keeps a "Version Packages" PR
+current, and merging that PR publishes to npm (trusted publishing, with
+provenance), tags the release, and writes the GitHub Release. See
+[CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## License
 
