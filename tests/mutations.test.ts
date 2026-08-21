@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { type ComposerDoc, emptyDoc } from "../src/composer/doc";
 import {
+  type ComposerDoc,
+  emptyDoc,
   freezePlacements,
   insertItem,
   moveItem,
@@ -13,7 +13,8 @@ import {
   setSilent,
   setTitle,
   setWtPlacement,
-} from "../src/composer/mutations";
+} from "@dumbshow/core";
+import { describe, expect, it } from "vitest";
 
 function sample(): ComposerDoc {
   const doc = emptyDoc();

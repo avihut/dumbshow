@@ -1,8 +1,6 @@
+import { BOXES_PACK } from "@dumbshow/boxes";
+import { derive, emptyDoc, transcriptAt, visibleLines } from "@dumbshow/core";
 import { describe, expect, it } from "vitest";
-import { BOXES_PACK } from "../harness/boxes-pack";
-import { derive } from "../src/composer/derive";
-import { emptyDoc } from "../src/composer/doc";
-import { transcriptAt, visibleLines } from "../src/transcript";
 
 function term() {
   const doc = emptyDoc();

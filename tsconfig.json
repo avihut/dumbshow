@@ -8,11 +8,27 @@
     "noUncheckedIndexedAccess": false,
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
+    "allowImportingTsExtensions": true,
     "skipLibCheck": true,
     "noEmit": true,
     "jsx": "preserve",
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    // Workspace packages resolve to their sources for typecheck, tests, and
+    // the harness — no build needed. The per-package tsconfig.build.json
+    // clears this so emitted declarations reference the published names.
+    "paths": {
+      "@dumbshow/core": ["./packages/core/src/index.ts"],
+      "@dumbshow/vue": ["./packages/vue/src/index.ts"],
+      "@dumbshow/boxes": ["./packages/boxes/src/index.ts"]
+    }
   },
-  "include": ["src/**/*", "harness/**/*", "tests/**/*", "vitest.config.ts"],
-  "exclude": ["dist", "node_modules"]
+  "include": [
+    "packages/*/src/**/*",
+    "packages/*/vite.config.ts",
+    "apps/*/src/**/*",
+    "apps/*/vite.config.ts",
+    "tests/**/*",
+    "*.ts"
+  ],
+  "exclude": ["**/dist", "**/node_modules"]
 }

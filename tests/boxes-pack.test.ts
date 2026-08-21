@@ -4,8 +4,8 @@
  * unimplemented here, the editor has a path no second consumer exercises.
  */
 
+import { BOXES_PACK, type Hit, type World } from "@dumbshow/boxes";
 import { describe, expect, it } from "vitest";
-import { BOXES_PACK, type Hit, type World } from "../harness/boxes-pack";
 
 function world(names: string[], links: [string, string][] = []): World {
   return {

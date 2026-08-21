@@ -1,0 +1,17 @@
+{
+  "name": "dumbshow-harness-vue",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Vue harness — @dumbshow/vue's editor mounted with the boxes reference pack. Never published.",
+  "license": "FSL-1.1-MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite"
+  },
+  "dependencies": {
+    "@dumbshow/boxes": "workspace:*",
+    "@dumbshow/core": "workspace:*",
+    "@dumbshow/vue": "workspace:*",
+    "vue": "3.5.41"
+  }
+}

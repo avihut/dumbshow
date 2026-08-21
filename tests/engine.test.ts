@@ -1,8 +1,12 @@
+import { type Act, BOXES_PACK } from "@dumbshow/boxes";
+import {
+  compile,
+  type DocItem,
+  derive,
+  emptyDoc,
+  type StepDef,
+} from "@dumbshow/core";
 import { describe, expect, it } from "vitest";
-import { type Act, BOXES_PACK } from "../harness/boxes-pack";
-import { derive } from "../src/composer/derive";
-import { type DocItem, emptyDoc } from "../src/composer/doc";
-import { compile, type StepDef } from "../src/engine";
 
 const op = (op: string, args: Record<string, unknown>): DocItem => ({
   kind: "op",

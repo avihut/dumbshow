@@ -8,15 +8,15 @@ pnpm = "11.17.0"
 enter = "pnpm install --frozen-lockfile --prefer-offline 2>/dev/null || pnpm install"
 
 [tasks.dev]
-description = "Run the harness dev app (the editor + the boxes pack)"
+description = "Run the Vue harness app (the editor + the boxes pack), apps/harness-vue"
 run = "pnpm dev"
 
 [tasks.build]
-description = "Build the library to dist/ (vite first, then vue-tsc declarations)"
+description = "Build every package to its dist/ (vite first, then declarations), in dependency order"
 run = "pnpm build"
 
 [tasks.test]
-description = "Run the vitest suite"
+description = "Run the workspace vitest suite (tests/)"
 run = "pnpm test"
 
 [tasks.lint]
@@ -28,7 +28,7 @@ description = "Biome check --write"
 run = "pnpm format"
 
 [tasks.typecheck]
-description = "vue-tsc, no emit (src, harness, tests)"
+description = "vue-tsc, no emit, over every package, app, and test"
 run = "pnpm typecheck"
 
 [tasks.changeset]
