@@ -1,61 +1,23 @@
 {
-  "name": "@avihut/dumbshow",
-  "version": "0.2.0",
-  "description": "A semantic-animation composer: language packs define entities, verbs, and renderings; dumbshow provides the document model, deterministic player, editor, viewers, and exports.",
+  "name": "dumbshow",
+  "private": true,
+  "description": "The dumbshow workspace — @dumbshow/core, @dumbshow/vue, the private boxes reference pack, and the Vue harness app.",
   "license": "FSL-1.1-MIT",
   "type": "module",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/avihut/dumbshow.git"
-  },
-  "homepage": "https://github.com/avihut/dumbshow#readme",
-  "bugs": "https://github.com/avihut/dumbshow/issues",
-  "keywords": [
-    "animation",
-    "diagram",
-    "editor",
-    "canvas",
-    "timeline",
-    "vue"
-  ],
-  "files": [
-    "dist"
-  ],
-  "publishConfig": {
-    "access": "public"
-  },
-  "main": "./dist/dumbshow.js",
-  "module": "./dist/dumbshow.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/dumbshow.js"
-    },
-    "./style.css": "./dist/dumbshow.css"
-  },
-  "sideEffects": [
-    "**/*.css"
-  ],
   "scripts": {
-    "dev": "vite",
-    "build": "vite build && vue-tsc -p tsconfig.build.json",
+    "dev": "pnpm --filter dumbshow-harness-vue dev",
+    "build": "pnpm -r build",
     "typecheck": "vue-tsc --noEmit",
     "lint": "biome check .",
     "format": "biome check --write .",
     "test": "vitest run",
     "release": "pnpm build && changeset publish"
   },
-  "peerDependencies": {
-    "vue": "^3.5.0"
-  },
-  "dependencies": {
-    "gifenc": "1.0.3"
-  },
   "devDependencies": {
     "@biomejs/biome": "2.5.8",
     "@changesets/changelog-github": "1.0.0",
     "@changesets/cli": "3.0.0",
+    "@types/node": "24.13.3",
     "@vitejs/plugin-vue": "6.0.8",
     "typescript": "6.0.3",
     "vite": "8.2.1",

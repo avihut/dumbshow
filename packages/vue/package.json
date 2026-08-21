@@ -1,0 +1,48 @@
+{
+  "name": "@dumbshow/vue",
+  "version": "0.2.0",
+  "description": "The Vue editor for dumbshow: ComposerApp and its panes over @dumbshow/core — mount it with a language pack.",
+  "license": "FSL-1.1-MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/avihut/dumbshow.git",
+    "directory": "packages/vue"
+  },
+  "homepage": "https://github.com/avihut/dumbshow#readme",
+  "bugs": "https://github.com/avihut/dumbshow/issues",
+  "keywords": [
+    "animation",
+    "diagram",
+    "editor",
+    "canvas",
+    "timeline",
+    "vue"
+  ],
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "sideEffects": false,
+  "scripts": {
+    "build": "vite build && vue-tsc -p tsconfig.build.json"
+  },
+  "peerDependencies": {
+    "@dumbshow/core": "workspace:^",
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "@dumbshow/core": "workspace:*"
+  }
+}

@@ -1,5 +1,4 @@
-import { describe, expect, it } from "vitest";
-import { BOXES_PACK } from "../harness/boxes-pack";
+import { BOXES_PACK } from "@dumbshow/boxes";
 import {
   catalogGroups,
   isEventOp,
@@ -7,7 +6,8 @@ import {
   searchChips,
   seedMetaItem,
   seedOpItem,
-} from "../src/composer/vocabulary";
+} from "@dumbshow/core";
+import { describe, expect, it } from "vitest";
 
 describe("the catalog derives from the pack", () => {
   it("groups elements, verbs, events, and meta", () => {

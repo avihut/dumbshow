@@ -7,7 +7,7 @@ name: Release
 #                                    │   (version bump + CHANGELOG.md)
 #                                    └─► publish: build, `pnpm publish`
 #                                        over npm trusted publishing
-#                                        (OIDC), tag vX.Y.Z, GitHub Release
+#                                        (OIDC), tag <pkg>@<ver>, GitHub Releases
 #
 # Merging the Version Packages PR is the release decision; this workflow
 # does nothing a human has not merged. The three sub-actions are used
@@ -18,13 +18,14 @@ name: Release
 # PRs opened with GITHUB_TOKEN never trigger workflows), writes the release
 # commit and the tag through the GitHub API (signed by GitHub, attributed
 # to the App, which is the only non-admin actor the `release tags` ruleset
-# lets create v* tags), and creates the GitHub Release.
+# lets create release tags), and creates one GitHub Release per package.
 #
 # npm: no token anywhere. The publish job exchanges its GitHub OIDC token
 # for a short-lived npm credential through the Trusted Publisher registered
-# for @avihut/dumbshow (owner avihut, repo dumbshow, workflow release.yml —
-# the filename is part of the trust relationship; do not rename this file
-# without updating npm). Provenance is attested automatically.
+# on each published package — @dumbshow/core and @dumbshow/vue — (owner
+# avihut, repo dumbshow, workflow release.yml: the filename is part of the
+# trust relationship; do not rename this file without updating npm on
+# both). Provenance is attested automatically.
 
 on:
   push:

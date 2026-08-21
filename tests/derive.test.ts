@@ -1,7 +1,12 @@
+import { BOXES_PACK } from "@dumbshow/boxes";
+import {
+  type ComposerDoc,
+  type DocItem,
+  derive,
+  emptyDoc,
+  withCamsOf,
+} from "@dumbshow/core";
 import { describe, expect, it } from "vitest";
-import { BOXES_PACK } from "../harness/boxes-pack";
-import { derive, withCamsOf } from "../src/composer/derive";
-import { type ComposerDoc, type DocItem, emptyDoc } from "../src/composer/doc";
 
 function docOf(...items: DocItem[]): ComposerDoc {
   const doc = emptyDoc();

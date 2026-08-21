@@ -1,10 +1,5 @@
+import { DOC_VERSION, emptyDoc, parseDoc, serializeDoc } from "@dumbshow/core";
 import { describe, expect, it } from "vitest";
-import {
-  DOC_VERSION,
-  emptyDoc,
-  parseDoc,
-  serializeDoc,
-} from "../src/composer/doc";
 
 describe("document model", () => {
   it("starts empty at the current format version", () => {

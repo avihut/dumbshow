@@ -1,35 +1,83 @@
 # CLAUDE.md
 
 dumbshow is a semantic-animation composer: a **language pack** owns meaning
-(entities, ops, acts, scene state, drawing), and this package owns everything
-around it. `src/language.ts` is the whole pack contract; `src/engine.ts` the
-timeline compiler + headless player; `src/render-core.ts` the replay cursor,
-camera math, and canvas attachment; `src/transcript.ts` the shell projection;
-`src/composer/` the editor (panes, document model, exports). `harness/` mounts
-the editor with the **boxes** reference pack — the second consumer that keeps
-the contract honest (boxes pin through `placements.repos`, so node drags and
-every marker hook are exercised there too). The production pack (daft's) lives in the daft repo,
-which also carries the Playwright/golden test net that pins this machinery's
-behavior; do not break parity casually.
+(entities, ops, acts, scene state, drawing), and this workspace owns
+everything around it, split by framework into two published packages plus
+two private projects:
+
+- `packages/core` → **`@dumbshow/core`**, framework-free: `src/language.ts`
+  is the whole pack contract; `src/engine.ts` the timeline compiler +
+  headless player; `src/render-core.ts` the replay cursor, camera math, and
+  canvas attachment; `src/transcript.ts` the shell projection;
+  `src/editor/` the editor's document model (doc, derive, mutations,
+  storage, vocabulary, drag mechanics, the editor-level types) and
+  `editor.css`, the editor chrome stylesheet every framework's editor
+  shares (shipped as `@dumbshow/core/style.css`); `src/export/` the
+  exporters.
+- `packages/vue` → **`@dumbshow/vue`**: the editor UI — `ComposerApp` and
+  its panes — over `@dumbshow/core` and `vue`, both peers. A React (or
+  other) editor would be a sibling package of the same shape; there is no
+  umbrella package and the core never re-exports a framework.
+- `packages/boxes` → `@dumbshow/boxes`, private: the **boxes** reference
+  pack, the second consumer that keeps the contract honest (boxes pin
+  through `placements.repos`, so node drags and every marker hook are
+  exercised there too). Shared by the test suite and the harness apps.
+- `apps/harness-vue`: the Vue editor mounted with boxes (`mise run dev`).
+
+The production pack (daft's) lives in the daft repo, which also carries the
+Playwright/golden test net that pins this machinery's behavior; do not break
+parity casually.
+
+## Workspace mechanics
+
+- **Names resolve to sources everywhere but the build.** `tsconfig.json`
+  `paths`, `vitest.config.ts`, and the harness's `vite.config.ts` all map
+  `@dumbshow/core|vue|boxes` (and `@dumbshow/core/style.css`) to `src/`
+  through one definition, `workspace-aliases.ts` — typecheck, tests, and
+  the dev app never need a build. Each package's `tsconfig.build.json`
+  clears `paths` so emitted declarations reference the published names;
+  `pnpm -r build` orders core before vue (vue devDepends on core) and vue's
+  declaration build reads core's `dist/`.
+- **One version.** The two public packages are a changesets `fixed` group:
+  name the package(s) a change touches in the changeset and both bump
+  together. `@dumbshow/boxes` and the harness are private and never
+  versioned, tagged, or published (`privatePackages` in
+  `.changeset/config.json`).
+- **The core stays framework-free.** Its bundle may not import vue (the
+  build job greps for it), its sources may not import any UI framework,
+  and anything an editor needs that is not a component — selections, host
+  chrome shapes, the dnd state container — lives in core so every
+  framework's editor shares it.
+- **The stylesheet entry.** Vite's library mode refuses a bare CSS entry,
+  so `packages/core/src/style.ts` exists only to carry `editor.css` into
+  `dist/style.css`; the build drops the empty `style.js` and the
+  declaration build excludes the file. `index.js` never imports the CSS —
+  hosts import `@dumbshow/core/style.css` themselves.
+- **Peers through the workspace protocol.** `@dumbshow/vue` declares
+  `@dumbshow/core` as `workspace:^` (peer) and `workspace:*` (dev); pnpm
+  rewrites both at pack time and the build job asserts no `workspace:`
+  survives in a tarball.
 
 ## Hard rules (proven by the daft test net)
 
-- **The seam is imports.** Nothing under `src/` may name a pack concept or
-  import a host framework (the vitepress coupling was cut on extraction —
-  keep it out). Meaning arrives only through the injected `DiagramLanguage`;
-  pack components (the inspector) arrive as props, never imports. When the
-  contract grows a hook, extend `harness/boxes-pack.ts` in the same change —
-  the boxes pack implementing every hook is the honesty check.
+- **The seam is imports.** Nothing under `packages/core/src/` or
+  `packages/vue/src/` may name a pack concept or import a host (the
+  vitepress coupling was cut on extraction — keep it out), and nothing under
+  `packages/core/src/` may import a UI framework at all. Meaning arrives
+  only through the injected `DiagramLanguage`; pack components (the
+  inspector) arrive as props, never imports. When the contract grows a
+  hook, extend `packages/boxes/src/index.ts` in the same change — the boxes
+  pack implementing every hook is the honesty check.
 - **One document, no modes.** A document is `{ seed, timeline, placements }`
-  (`composer/doc.ts`, versioned). The seed renders as scene only; placements
+  (`packages/core/src/editor/doc.ts`, versioned). The seed renders as scene only; placements
   are authoring data, never timeline events; a still is a document whose
   timeline never played. Format v1 deliberately carries the daft-shaped seed
   schema — a generic seed is a document-version bump owned here (the boxes
   pack keeps seeds empty until then).
-- **Everything derives.** `composer/derive.ts` is the one road from document
+- **Everything derives.** `editor/derive.ts` (core) is the one road from document
   to playable steps; broken ops skip cleanly (`mapping` -1). Never build
   steps for the editor another way.
-- **Mutations are pure** (`composer/mutations.ts`, doc in, doc out). The app
+- **Mutations are pure** (`editor/mutations.ts` in core, doc in, doc out). The app
   swaps a shallowRef wholesale; mutations must receive plain objects, never
   deep-reactive proxies.
 - **Rebuild, never remount; never autoplay.** Every content edit recreates
@@ -53,23 +101,26 @@ behavior; do not break parity casually.
   Canvas edits keep the playhead; node drags show no DOM ghost.
 - **Pointer affordances are pack-painted, editor-driven.** The stage sets
   `data-hover` / `data-dragging` on `.dx-canvas-wrap` (the cursor lives in
-  composer.css) and composes the pack's `selectionOverlay`, `hoverOverlay`,
+  core's editor.css) and composes the pack's `selectionOverlay`, `hoverOverlay`,
   and `dragOverlay` markers into one overlay per frame — all identity-based:
   a marker finds its entity in each frame's hits. `entities.draggable(hit)`
   makes a hit tap-only (edges that select but never move).
-- **Exports never lie** (`composer/export/`). The offline renderer replays
+- **Exports never lie** (`packages/core/src/export/`). The offline renderer replays
   compiled events through the same `drawScene` as the live view; reduced
   motion is hard-coded OFF there. PNG = 2x transparent still; GIF composites
   onto a background, 12fps default, longest edge capped 900px; webm records
   real time and is offered only where MediaRecorder exists. Known nuance:
   detached canvases use grayscale text antialiasing — correct for portable
   files, don't "fix" it.
-- **Host chrome is props.** `ComposerApp` takes `back`, `isDark` (a writable
-  ref — hosts must pass the ref itself, e.g. bound as a property access so
-  Vue's template unwrapping doesn't collapse it to a boolean), `devHandle`
-  (window player handle — hosts gate it on their own dev mode), and
-  `fileTag` (draft key + `<slug>.<tag>.json` suffix; default "dumbshow").
-  Add host concerns as props with defaults, never as imports.
+- **Host chrome is props.** `ComposerApp` takes `back`, `isDark` as a
+  v-model (`v-model:isDark="dark"` — a boolean the host owns; absent = no
+  toggle; the toggle emits `update:isDark` and the host flips its own
+  class), `devHandle` (window player handle — hosts gate it on their own
+  dev mode), and `fileTag` (draft key + `<slug>.<tag>.json` suffix; default
+  "dumbshow"). Add host concerns as props with defaults, never as imports.
+  The shapes those props take (`BackLink`, `ExportEntry`, the selection
+  types) are `@dumbshow/core` exports so packs type against them without
+  the framework.
 - **The layout is locked** (settled in a design round with the daft docs —
   do not rearrange): LEFT the timeline over the docked catalog, each with a
   minimize chevron and edge-flap restore, both-minimized (or the direct
@@ -79,18 +130,21 @@ behavior; do not break parity casually.
 
 ## Theming contract (v0)
 
-`composer.css` reads these host tokens: `--vp-c-bg`, `--vp-c-bg-soft`,
+`packages/core/src/editor/editor.css` (shipped as `@dumbshow/core/style.css`)
+reads these host tokens: `--vp-c-bg`, `--vp-c-bg-soft`,
 `--vp-c-divider`, `--vp-c-text-1/2/3`, `--vp-font-family-base/mono`,
 `--daft-gold`, `--daft-gold-text`, `--daft-rust`, `--daft-rust-text`; dark
 styling keys off a `dark` class on `<html>`. The names are inherited from
 the daft docs host and renaming them to a dumbshow-owned prefix (with
 fallbacks) is a planned follow-up coordinated with that host —
-`harness/index.html` documents the set by defining it.
+`apps/harness-vue/index.html` documents the set by defining it.
 
 ## Toolchain
 
-pnpm via mise (`mise run dev|build|test|lint|format|typecheck|changeset|ci`;
-`ci` runs exactly what the PR checks run). devDeps are EXACT pins under a
+pnpm workspace via mise (`mise run dev|build|test|lint|format|typecheck|changeset|ci`;
+`ci` runs exactly what the PR checks run). Tooling lives in the root
+`package.json` — packages declare only what they ship (core: `gifenc`;
+vue: its peers) — and devDeps are EXACT pins under a
 7-day cooldown that is enforced, not just practiced: `pnpm-workspace.yaml`
 sets `minimumReleaseAge: 10080` (strict — an exact pin on a too-young
 release fails resolution instead of falling back) and Dependabot waits the
@@ -99,22 +153,27 @@ JS-based one) on purpose: TypeScript 7 is the native compiler without the
 programmatic API `vue-tsc` drives (typecheck and d.ts emit), so Dependabot
 ignores `typescript >= 7` (`.github/dependabot.yml`) while 6.x minors keep
 flowing; lift that the moment `vue-tsc` supports TS 7 — expected after TS
-7.1's stable API — and bump both together. `vue-tsc` is the only real typechecker
-(vite and esbuild never typecheck; the build runs it after vite — vue-tsc
-first would lose its d.ts to vite's emptyOutDir). Biome: the Vue domain is
+7.1's stable API — and bump both together. `vue-tsc --noEmit` at the root is
+the only real typechecker and covers every package, app, and test (vite and
+esbuild never typecheck); declarations are emitted per package after vite —
+`tsc` for core, `vue-tsc` for vue; declarations first would lose their d.ts
+to vite's emptyOutDir. Biome: the Vue domain is
 active here (vue is a direct dep), and biome 2.5's Vue analysis cannot see
 template usage — so `noUnusedImports`, `noUnusedVariables`, and
 `useVueMultiWordComponentNames` are off for `*.vue` in `biome.json`;
 re-enable when a Biome upgrade understands templates. The lint baseline is
-ZERO diagnostics — keep it there; `tests/` is linted and typechecked too.
+ZERO diagnostics — keep it there; `tests/`, `apps/`, and every config file
+are linted and typechecked too.
 
 ## Tests
 
-`tests/*.test.ts` (vitest, node environment, `vitest.config.ts` — the vite
-config roots the dev server at `harness/` and suits neither discovery nor
-the node environment) cover the document model, mutations, derive, the
-engine compiler, the transcript, the catalog, and the boxes pack's honesty
-(every optional hook implemented; every verb round-trips through its shell).
+`tests/*.test.ts` is the workspace suite (vitest, node environment,
+`vitest.config.ts`): it imports `@dumbshow/core` and `@dumbshow/boxes` by
+name — the aliases resolve them to sources — and covers the document model,
+mutations, derive, the engine compiler, the transcript, the catalog, and
+the boxes pack's honesty (every optional hook implemented; every verb
+round-trips through its shell). Core behavior is tested through the
+reference pack on purpose; there are no per-package test directories yet.
 `tests/__snapshots__/boxes-board.golden.json` is a committed golden of a
 scripted board derived + compiled — byte-for-byte timing, mapping, and step
 shape. Update it with `pnpm vitest run -u` only deliberately and review the
@@ -125,13 +184,14 @@ groups onto the harness is the planned next step.
 ## CI, releases, and repository policy
 
 **CI** (`.github/workflows/ci.yml`) runs on every PR and on master: `lint`,
-`typecheck`, `build` (plus a tarball-shape check — `files`/`exports` drift or
-a source leak fails there, not after a publish), and `test`, each through
-the same `mise run` task a contributor runs; plus `dco` (every human commit
-carries `Signed-off-by`; `*[bot]` authors are exempt) and `changeset` (a PR
-that touches `src/`, `package.json`, the lockfile, or the build/TS config
-must add a `.changeset/*.md` — skipped for the release bot's own PR,
-Dependabot, and the `skip-changeset` label). The master ruleset requires all
+`typecheck`, `build` (every package, then a tarball-shape check of both
+published packages — `files`/`exports` drift, a source leak, a surviving
+`workspace:` protocol, or vue in the core bundle fails there, not after a
+publish), and `test`, each through the same `mise run` task a contributor
+runs; plus `dco` (every human commit carries `Signed-off-by`; `*[bot]`
+authors are exempt) and `changeset` (a PR that touches `packages/core/`,
+`packages/vue/`, or the lockfile must add a `.changeset/*.md` — skipped for
+the release bot's own PR, Dependabot, and the `skip-changeset` label). The master ruleset requires all
 six by job name: rename a job here and the ruleset in the same change.
 
 **Releases** are changesets-driven (`.changeset/`, `release.yml`):
@@ -141,23 +201,27 @@ six by job name: rename a job here and the ruleset in the same change.
    patch). Nothing bumps `package.json` by hand — ever.
 2. On each push to master the release bot (the Wheatley GitHub App, via
    `changesets/action`) keeps a `chore: version packages` PR current: the
-   version bump plus `CHANGELOG.md` entries generated from the changesets
+   lockstep version bump of both packages plus per-package `CHANGELOG.md`
+   entries generated from the changesets
    (`@changesets/changelog-github` links each to its PR). CI runs on that
    PR because the App token opened it — PRs opened with `GITHUB_TOKEN`
    never trigger workflows.
-3. Merging that PR is the release. The same workflow builds, publishes with
-   `pnpm publish` through npm trusted publishing (OIDC — no registry token
-   exists anywhere, provenance is attested), creates the `vX.Y.Z` tag
-   through the GitHub API (the `release tags` ruleset lets only the App and
-   the admin create one), and writes the GitHub Release.
+3. Merging that PR is the release. The same workflow builds, publishes both
+   packages with `pnpm publish` through npm trusted publishing (OIDC — no
+   registry token exists anywhere, provenance is attested), creates one
+   `<pkg>@<version>` tag per package through the GitHub API (the
+   `release tags` ruleset covers `v*` and `@dumbshow/*` and lets only the
+   App and the admin create one), and writes one GitHub Release per tag.
 
-The publish step must run inside `release.yml` under that exact name: npm's
-trusted-publisher record is `avihut/dumbshow` + `release.yml`, and renaming
-the file breaks publishing until npm is updated. `id-token: write` exists
-only in the publish job (the sub-actions are used for that reason). `pnpm
-build` produces `dist/` (ESM, vue externalized, gifenc bundled, d.ts via
-vue-tsc, `dist/dumbshow.css` exported as `./style.css`). Downstream
-consumers pin the new version themselves. License is FSL-1.1-MIT;
+The publish step must run inside `release.yml` under that exact name: each
+package's npm trusted-publisher record is `avihut/dumbshow` + `release.yml`,
+and renaming the file breaks publishing until npm is updated on both.
+`id-token: write` exists only in the publish job (the sub-actions are used
+for that reason). `pnpm build` runs each package's build in dependency
+order: core = `vite build` (ESM, gifenc bundled, `dist/style.css` from the
+`style.ts` entry, exported as `./style.css`) then `tsc` declarations; vue =
+`vite build` (vue and `@dumbshow/core` externalized) then `vue-tsc`
+declarations. Downstream consumers pin the new versions themselves. License is FSL-1.1-MIT;
 contributions need a DCO sign-off (`git commit -s`).
 
 **Repository policy** — every setting is applied through `gh api` and the
@@ -165,8 +229,8 @@ payloads are recorded in the pipeline PR (#1) so it can be reproduced:
 squash-only merges with the PR title/body as the commit, delete branch on
 merge, auto-merge allowed, web commit sign-off required; rulesets on
 `master` (PR-only, the six required checks, linear history, no force-push,
-no deletion, bypass = admin + the release App) and on `v*` tags (create,
-update, delete restricted to the same two); Actions policy requires
+no deletion, bypass = admin + the release App) and on release tags — `v*`
+and `@dumbshow/*` — (create, update, delete restricted to the same two); Actions policy requires
 full-SHA pins (Dependabot moves the pins); Dependabot alerts + security
 updates, private vulnerability reporting (`.github/SECURITY.md`), CodeQL
 default setup, secret scanning + push protection.

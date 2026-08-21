@@ -2,10 +2,12 @@
   "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
   "files": {
     "includes": [
-      "src/**",
-      "harness/**",
+      "packages/**",
+      "apps/**",
       "tests/**",
       "!tests/__snapshots__",
+      "!**/dist",
+      "!**/node_modules",
       "*.json",
       "*.ts",
       ".changeset/*.json"

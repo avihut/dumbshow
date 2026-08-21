@@ -6,10 +6,9 @@
  * `pnpm vitest run -u` and review the diff like a contract change.
  */
 
+import { BOXES_PACK } from "@dumbshow/boxes";
+import { type ComposerDoc, derive, emptyDoc } from "@dumbshow/core";
 import { expect, it } from "vitest";
-import { BOXES_PACK } from "../harness/boxes-pack";
-import { derive } from "../src/composer/derive";
-import { type ComposerDoc, emptyDoc } from "../src/composer/doc";
 
 function scripted(): ComposerDoc {
   const doc = emptyDoc();

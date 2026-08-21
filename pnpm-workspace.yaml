@@ -1,3 +1,9 @@
+# The workspace: the two published packages, the private reference pack,
+# and the apps (harness) — see README.md for the map.
+packages:
+  - "packages/*"
+  - "apps/*"
+
 # pnpm settings (pnpm 10+ reads its settings from this file).
 #
 # Dependency cooldown: refuse to resolve any release younger than 7 days
