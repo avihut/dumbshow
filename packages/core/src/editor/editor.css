@@ -34,6 +34,11 @@
      destructive verbs and anything the timeline could not run. */
   --dx-accent: #bd8c26;
   --dx-accent-text: #9a7115;
+  /* The ink that sits ON an accent fill — not to be confused with
+     --dx-accent-text, which is the accent used AS text on the page. A host
+     that overrides --dx-accent owns this too: what reads on gold does not
+     read on someone else's blue, and it can differ per theme. */
+  --dx-on-accent: #241b09;
   --dx-warn: #c75c1e;
   --dx-warn-text: #b14e14;
 
@@ -168,7 +173,7 @@ html.dx-lock body {
 .dx-chrome-btn.primary {
   background: var(--dx-accent);
   border-color: var(--dx-accent);
-  color: #241b09;
+  color: var(--dx-on-accent);
 }
 .dx-chrome-btn.toggled {
   color: var(--dx-accent-text);

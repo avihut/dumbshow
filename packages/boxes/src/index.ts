@@ -299,8 +299,15 @@ interface Palette {
   halo: string;
 }
 
+/**
+ * The theming contract says dark keys off a `dark` class on <html>, and the
+ * editor chrome reads it that way — so a pack must too. Reading
+ * prefers-color-scheme instead leaves the canvas in the old palette whenever
+ * the theme is toggled rather than inherited from the OS, which is exactly
+ * what a host's dark-mode switch does.
+ */
 function readPalette(): Palette {
-  const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+  const dark = document.documentElement.classList.contains("dark");
   return dark
     ? { ink: "#e5e2dc", faint: "#8a877f", accent: "#4fb3bf", halo: "#1b1a18" }
     : { ink: "#2c2a26", faint: "#a09d95", accent: "#12777f", halo: "#f5f3ef" };

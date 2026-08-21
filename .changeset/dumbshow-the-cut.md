@@ -29,6 +29,7 @@ gets a coherent editor in light and dark.
 | `--dx-font-mono` | `--vp-font-family-mono` | `ui-monospace, "SF Mono", Menlo, monospace` | — |
 | `--dx-accent` | `--daft-gold` | `#bd8c26` | `#d1a54a` |
 | `--dx-accent-text` | `--daft-gold-text` | `#9a7115` | `#e0b866` |
+| `--dx-on-accent` | (was hard-coded `#241b09`) | `#241b09` | — |
 | `--dx-warn` | `--daft-rust` | `#c75c1e` | `#d9752f` |
 | `--dx-warn-text` | `--daft-rust-text` | `#b14e14` | `#e08a4a` |
 | `--dx-teal` / `--dx-purple` | unchanged | `#1b9aaa` / `#8a63d2` | — |
@@ -52,6 +53,14 @@ How the defaults behave, which is the part worth knowing:
   neither.
 - `--dx-sel` is an expression over `--dx-accent` and `--dx-bg`, not a literal:
   override only the accent and the selection tint follows.
+- `--dx-on-accent` is new, and is **the one token a host cannot skip if it
+  changes `--dx-accent`**. It is the ink on an accent-filled surface — the
+  primary toolbar button is the only one in the chrome — and it was previously
+  a hard-coded `#241b09` tuned for gold. That literal reads at 5.6:1 on the
+  default gold and 7.4:1 on its dark form, but drops to 4.1:1 on a mid blue;
+  white is worse on gold (3.0:1). It is deliberately NOT `--dx-accent-text`,
+  which is the accent used AS text on the page. Expect to set it per theme:
+  a dark accent wants light ink, a pale dark-mode accent wants dark ink.
 
 For a host mapping an existing palette, the whole job is a block of
 `--dx-*: var(--your-token)` in both themes. Until it does, the editor chrome

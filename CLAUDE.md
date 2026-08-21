@@ -166,6 +166,7 @@ still gets a coherent editor in both themes.
 | `--dx-font-mono` | `ui-monospace, "SF Mono", Menlo, monospace` | — |
 | `--dx-accent` | `#bd8c26` | `#d1a54a` |
 | `--dx-accent-text` | `#9a7115` | `#e0b866` |
+| `--dx-on-accent` | `#241b09` | — |
 | `--dx-warn` | `#c75c1e` | `#d9752f` |
 | `--dx-warn-text` | `#b14e14` | `#e08a4a` |
 | `--dx-teal` / `--dx-purple` | `#1b9aaa` / `#8a63d2` | — |
@@ -186,6 +187,13 @@ Four rules make that work, and none of them is incidental:
   read a theme.
 - **`--dx-sel` stays an expression, not a literal**, so a host that overrides
   only `--dx-accent` still gets a matching selection tint.
+- **`--dx-on-accent` is the ink on an accent fill** — distinct from
+  `--dx-accent-text`, which is the accent used AS text on the page. A host that
+  overrides `--dx-accent` owns this one too: what reads on the default gold
+  (`#241b09`, 5.6:1) fails on a blue, and the right answer can differ per theme.
+  `apps/harness-vue/index.html` shows both halves. Nothing else in the chrome
+  puts text on an accent fill — the other eight accent surfaces are dots,
+  notches, carets and knobs.
 
 Dark styling keys off a `dark` class on `<html>` (keep that convention). A
 host that overrides a token owns it in BOTH themes — its declaration outranks
