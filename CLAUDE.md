@@ -89,42 +89,79 @@ fallbacks) is a planned follow-up coordinated with that host —
 
 ## Toolchain
 
-pnpm via mise (`mise run dev|build|test|lint|format|typecheck`). devDeps are
-EXACT pins under a 7-day cooldown discipline — bump deliberately, never to a
-release younger than a week. `vue-tsc` is the only real typechecker (vite
-and esbuild never typecheck; the build runs it first). Biome: the Vue domain
-is active here (vue is a direct dep), and biome 2.5's Vue analysis cannot
-see template usage — so `noUnusedImports`, `noUnusedVariables`, and
+pnpm via mise (`mise run dev|build|test|lint|format|typecheck|changeset|ci`;
+`ci` runs exactly what the PR checks run). devDeps are EXACT pins under a
+7-day cooldown that is enforced, not just practiced: `pnpm-workspace.yaml`
+sets `minimumReleaseAge: 10080` (strict — an exact pin on a too-young
+release fails resolution instead of falling back) and Dependabot waits the
+same 7 days before proposing a bump. `vue-tsc` is the only real typechecker
+(vite and esbuild never typecheck; the build runs it after vite — vue-tsc
+first would lose its d.ts to vite's emptyOutDir). Biome: the Vue domain is
+active here (vue is a direct dep), and biome 2.5's Vue analysis cannot see
+template usage — so `noUnusedImports`, `noUnusedVariables`, and
 `useVueMultiWordComponentNames` are off for `*.vue` in `biome.json`;
 re-enable when a Biome upgrade understands templates. The lint baseline is
-ZERO diagnostics — keep it there.
+ZERO diagnostics — keep it there; `tests/` is linted and typechecked too.
 
-## Publishing
+## Tests
 
-`@avihut/dumbshow`, published under the npm org `avihut` (`publishConfig`
-already sets public access). `pnpm build` produces `dist/` (ESM, vue
-externalized, gifenc bundled, d.ts via vue-tsc, `dist/dumbshow.css` exported
-as `./style.css`). License is FSL-1.1-MIT; contributions need a DCO
-sign-off (`git commit -s`).
+`tests/*.test.ts` (vitest, node environment, `vitest.config.ts` — the vite
+config roots the dev server at `harness/` and suits neither discovery nor
+the node environment) cover the document model, mutations, derive, the
+engine compiler, the transcript, the catalog, and the boxes pack's honesty
+(every optional hook implemented; every verb round-trips through its shell).
+`tests/__snapshots__/boxes-board.golden.json` is a committed golden of a
+scripted board derived + compiled — byte-for-byte timing, mapping, and step
+shape. Update it with `pnpm vitest run -u` only deliberately and review the
+diff like a contract change. The Playwright editor specs still run from the
+production pack's host through its source link; porting the `editor.*`
+groups onto the harness is the planned next step.
 
-Release process — manual today, no CI (there are no GitHub workflows yet; the
-daft docs' Playwright/golden suite run through its `DUMBSHOW_SRC` source link
-is the regression net):
+## CI, releases, and repository policy
 
-1. Land the work on master (feature branch, DCO-signed conventional
-   commits; `mise run lint`, `mise run typecheck`, `mise run build` green).
-2. Bump `package.json` (0.x: a contract or document-format change is a
-   minor bump, anything else a patch) in its own `chore: release X.Y.Z`
-   commit.
-3. `mise run build` on master, then `pnpm publish` — needs the maintainer's
-   npm 2FA in a real terminal (the build's `vite build && vue-tsc` order
-   matters: vue-tsc first would lose its d.ts to vite's emptyOutDir).
-4. Tag the release commit `vX.Y.Z` (annotated — `tag.gpgsign` makes tags
-   annotated, so pass `-m`) and push master + tags.
-5. In daft: `cd docs && bun add --exact @avihut/dumbshow@X.Y.Z` (the package
-   is excluded from the bun cooldown), run the suite against the registry
-   build, commit the pin.
+**CI** (`.github/workflows/ci.yml`) runs on every PR and on master: `lint`,
+`typecheck`, `build` (plus a tarball-shape check — `files`/`exports` drift or
+a source leak fails there, not after a publish), and `test`, each through
+the same `mise run` task a contributor runs; plus `dco` (every human commit
+carries `Signed-off-by`; `*[bot]` authors are exempt) and `changeset` (a PR
+that touches `src/`, `package.json`, the lockfile, or the build/TS config
+must add a `.changeset/*.md` — skipped for the release bot's own PR,
+Dependabot, and the `skip-changeset` label). The master ruleset requires all
+six by job name: rename a job here and the ruleset in the same change.
 
-Planned: a CI workflow (lint/typecheck/build on push and PR), a tag-driven
-publish with npm trusted publishing (OIDC, no 2FA dance), and the copied
-`editor.*` specs so the package carries its own net.
+**Releases** are changesets-driven (`.changeset/`, `release.yml`):
+
+1. Every user-facing change lands with a changeset (`pnpm changeset`; 0.x:
+   a contract or document-format change is a minor bump, anything else a
+   patch). Nothing bumps `package.json` by hand — ever.
+2. On each push to master the release bot (the Wheatley GitHub App, via
+   `changesets/action`) keeps a `chore: version packages` PR current: the
+   version bump plus `CHANGELOG.md` entries generated from the changesets
+   (`@changesets/changelog-github` links each to its PR). CI runs on that
+   PR because the App token opened it — PRs opened with `GITHUB_TOKEN`
+   never trigger workflows.
+3. Merging that PR is the release. The same workflow builds, publishes with
+   `pnpm publish` through npm trusted publishing (OIDC — no registry token
+   exists anywhere, provenance is attested), creates the `vX.Y.Z` tag
+   through the GitHub API (the `release tags` ruleset lets only the App and
+   the admin create one), and writes the GitHub Release.
+
+The publish step must run inside `release.yml` under that exact name: npm's
+trusted-publisher record is `avihut/dumbshow` + `release.yml`, and renaming
+the file breaks publishing until npm is updated. `id-token: write` exists
+only in the publish job (the sub-actions are used for that reason). `pnpm
+build` produces `dist/` (ESM, vue externalized, gifenc bundled, d.ts via
+vue-tsc, `dist/dumbshow.css` exported as `./style.css`). Downstream
+consumers pin the new version themselves. License is FSL-1.1-MIT;
+contributions need a DCO sign-off (`git commit -s`).
+
+**Repository policy** — every setting is applied through `gh api` and the
+payloads are recorded in the pipeline PR (#1) so it can be reproduced:
+squash-only merges with the PR title/body as the commit, delete branch on
+merge, auto-merge allowed, web commit sign-off required; rulesets on
+`master` (PR-only, the six required checks, linear history, no force-push,
+no deletion, bypass = admin + the release App) and on `v*` tags (create,
+update, delete restricted to the same two); Actions policy requires
+full-SHA pins (Dependabot moves the pins); Dependabot alerts + security
+updates, private vulnerability reporting (`.github/SECURITY.md`), CodeQL
+default setup, secret scanning + push protection.

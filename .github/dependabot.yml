@@ -1,0 +1,63 @@
+# Dependabot version updates.
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# Cooldown policy: every ecosystem waits 7 days before opening a version-update
+# PR — the same discipline pnpm enforces locally through `minimumReleaseAge` in
+# pnpm-workspace.yaml. Security updates bypass the cooldown automatically
+# (Dependabot behavior, not configurable).
+
+version: 2
+updates:
+  # The package's own dependency tree (pnpm-lock.yaml at the root).
+  - package-ecosystem: "npm"
+    directory: "/"
+    target-branch: "master"
+    schedule:
+      interval: "daily"
+      time: "09:00"
+      timezone: "Asia/Jerusalem"
+    cooldown:
+      default-days: 7
+    # devDependencies are EXACT pins (CLAUDE.md) — bump the pin, never widen
+    # it into a range.
+    versioning-strategy: "increase"
+    groups:
+      npm-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    labels:
+      - "dependencies"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps-dev"
+      include: "scope"
+    rebase-strategy: "auto"
+
+  # GitHub Actions — every `uses:` is pinned to a full commit SHA (the repo's
+  # Actions policy requires it); Dependabot moves the pin and the version
+  # comment together.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "master"
+    schedule:
+      interval: "daily"
+      time: "09:00"
+      timezone: "Asia/Jerusalem"
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    rebase-strategy: "auto"

@@ -1,0 +1,10 @@
+# CODEOWNERS for dumbshow
+#
+# Scope is deliberately narrow: only the paths whose modification could
+# weaken the repository's security posture — workflow YAML, this file, the
+# Dependabot config, and the release configuration — are owner-gated. Source
+# changes follow the normal PR flow.
+
+/.github/                 @avihut
+/.changeset/config.json   @avihut
+/pnpm-workspace.yaml      @avihut
