@@ -30,11 +30,10 @@ The two public packages are released together and share one version.
 
 ## Status
 
-Pre-release. The machinery was built and hardened inside the
-[daft](https://github.com/avihut/daft) documentation composer behind a
-language-pack seam with a full characterization test net, and now lives
-here. Earlier releases shipped as a single package, `@avihut/dumbshow`
-(deprecated in favor of the packages above).
+Pre-release. The machinery was built and hardened inside a documentation
+composer behind a language-pack seam, with a full characterization test
+net, and now lives here. Earlier releases shipped as a single package,
+`@avihut/dumbshow` (deprecated in favor of the packages above).
 
 ## Using it
 
@@ -50,9 +49,9 @@ import { ComposerApp } from "@dumbshow/vue";
 
 A language pack implements the `DiagramLanguage` contract — the op registry,
 world model, seed semantics, scene hooks (apply + draw), entity semantics,
-and optionally a shell grammar. The daft pack in the daft repository is the
-reference production pack; `packages/boxes` here is the minimal one. Mount
-the editor with a pack and its inspector component:
+and optionally a shell grammar. `packages/boxes` here is the minimal one —
+the reference every hook is proven against. Mount the editor with a pack
+and its inspector component:
 
 ```ts
 createApp(ComposerApp, { lang: MY_PACK, inspector: MyInspector }).mount("#app");

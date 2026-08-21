@@ -77,17 +77,17 @@ const view = computed(() => props.viewWorld as World);
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--vp-c-text-3);
+  color: var(--dx-text-3);
 }
 .bx-inspector ul {
   margin: 0;
   padding-left: 18px;
-  font-family: var(--vp-font-family-mono);
+  font-family: var(--dx-font-mono);
   font-size: 12px;
 }
 .bx-inspector > section > p {
   margin: 0;
   font-size: 12px;
-  color: var(--vp-c-text-2);
+  color: var(--dx-text-2);
 }
 </style>

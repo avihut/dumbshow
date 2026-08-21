@@ -1,6 +1,6 @@
 /**
- * Render scaffolding — the generic half of drawing, split from the daft
- * renderer (./render.ts) along the language-pack seam (./language.ts).
+ * Render scaffolding — the generic half of drawing, split from a pack's
+ * renderer along the language-pack seam (./language.ts).
  *
  * This module owns everything about putting a language's scene on a canvas
  * that does not know what the scene contains: the event-sourced replay
@@ -8,7 +8,7 @@
  * attachment that wires a player's clock to a draw loop (observers, DPR,
  * overlays, hit-testing plumbing). The language-shaped parts — scene state,
  * act application, the actual drawing, the palette read, hit priority —
- * arrive injected through hooks, so nothing here may name a daft concept.
+ * arrive injected through hooks, so nothing here may name a pack concept.
  */
 
 import type { CamKey, CamRect, Player, SceneEvent } from "./engine";

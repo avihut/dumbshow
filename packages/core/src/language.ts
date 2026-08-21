@@ -1,19 +1,19 @@
 /**
  * The language-pack seam — the contract between the generic diagram
- * machinery (engine clock, editor, exports: the future dumbshow package)
- * and a concrete diagram language (daft's pack, assembled in pack.ts).
+ * machinery (engine clock, editor, exports) and a concrete diagram
+ * language, assembled by whichever pack a host loads.
  *
  * The generic side owns documents, time, pointers, and pixels-as-plumbing:
  * compile/player, the editor chrome, drag mechanics, offline frame
  * stepping, persistence. A language owns MEANING: what entities exist
  * (the world), what can be said about them (ops), what happenings look
  * like (acts + scene + drawing), and how its shell spells things. This
- * file declares the shapes a pack provides; nothing here may name a daft
+ * file declares the shapes a pack provides; nothing here may name a pack
  * concept — the seam rule in CLAUDE.md keeps it that way.
  *
  * The contract grows only as the generic side consumes it (engine first,
  * then render scaffolding, then the editor); the reference pack in the
- * dumbshow harness is the honesty check that nothing daft-shaped leaks in.
+ * dumbshow harness is the honesty check that nothing pack-shaped leaks in.
  */
 
 /** An act: one timed happening in a scene. The generic side never reads

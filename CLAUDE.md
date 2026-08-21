@@ -24,7 +24,7 @@ two private projects:
   exercised there too). Shared by the test suite and the harness apps.
 - `apps/harness-vue`: the Vue editor mounted with boxes (`mise run dev`).
 
-The production pack (daft's) lives in the daft repo, which also carries the
+The production pack lives in its own host repo, which also carries the
 Playwright/golden test net that pins this machinery's behavior; do not break
 parity casually.
 
@@ -58,7 +58,7 @@ parity casually.
   rewrites both at pack time and the build job asserts no `workspace:`
   survives in a tarball.
 
-## Hard rules (proven by the daft test net)
+## Hard rules (proven by the production host's test net)
 
 - **The seam is imports.** Nothing under `packages/core/src/` or
   `packages/vue/src/` may name a pack concept or import a host (the
@@ -71,9 +71,9 @@ parity casually.
 - **One document, no modes.** A document is `{ seed, timeline, placements }`
   (`packages/core/src/editor/doc.ts`, versioned). The seed renders as scene only; placements
   are authoring data, never timeline events; a still is a document whose
-  timeline never played. Format v1 deliberately carries the daft-shaped seed
-  schema — a generic seed is a document-version bump owned here (the boxes
-  pack keeps seeds empty until then).
+  timeline never played. Format v1 deliberately carries a seed schema the
+  generic model defines — pack-owned seeds are a document-version bump owned
+  here (the boxes pack keeps seeds empty until then).
 - **Everything derives.** `editor/derive.ts` (core) is the one road from document
   to playable steps; broken ops skip cleanly (`mapping` -1). Never build
   steps for the editor another way.
@@ -121,23 +121,58 @@ parity casually.
   The shapes those props take (`BackLink`, `ExportEntry`, the selection
   types) are `@dumbshow/core` exports so packs type against them without
   the framework.
-- **The layout is locked** (settled in a design round with the daft docs —
-  do not rearrange): LEFT the timeline over the docked catalog, each with a
+- **The layout is locked** (settled in a design round with the production
+  host — do not rearrange): LEFT the timeline over the docked catalog, each with a
   minimize chevron and edge-flap restore, both-minimized (or the direct
   control) collapsing the sidepane; CENTER canvas over the shell; RIGHT the
   host's inspector over the always-visible attributes form; BOTTOM the
   player bar only, hidden by the toolbar's Scrubber toggle.
 
-## Theming contract (v0)
+## Theming contract (v1)
 
 `packages/core/src/editor/editor.css` (shipped as `@dumbshow/core/style.css`)
-reads these host tokens: `--vp-c-bg`, `--vp-c-bg-soft`,
-`--vp-c-divider`, `--vp-c-text-1/2/3`, `--vp-font-family-base/mono`,
-`--daft-gold`, `--daft-gold-text`, `--daft-rust`, `--daft-rust-text`; dark
-styling keys off a `dark` class on `<html>`. The names are inherited from
-the daft docs host and renaming them to a dumbshow-owned prefix (with
-fallbacks) is a planned follow-up coordinated with that host —
-`apps/harness-vue/index.html` documents the set by defining it.
+resolves every color, font, and tone through ONE public token set, all
+`--dx-` prefixed, and ships a default for each — a host that declares nothing
+still gets a coherent editor in both themes.
+
+| Token | Light | Dark |
+| --- | --- | --- |
+| `--dx-bg` | `#ffffff` | `#1b1b1f` |
+| `--dx-bg-soft` | `#f6f6f7` | `#202127` |
+| `--dx-divider` | `#e2e2e3` | `#2e2e32` |
+| `--dx-text-1` | `#3c3c43` | `#dfdfd6` |
+| `--dx-text-2` | `#67676c` | `#98989f` |
+| `--dx-text-3` | `#929295` | `#6a6a71` |
+| `--dx-font` | `ui-sans-serif, system-ui, sans-serif` | — |
+| `--dx-font-mono` | `ui-monospace, "SF Mono", Menlo, monospace` | — |
+| `--dx-accent` | `#bd8c26` | `#d1a54a` |
+| `--dx-accent-text` | `#9a7115` | `#e0b866` |
+| `--dx-warn` | `#c75c1e` | `#d9752f` |
+| `--dx-warn-text` | `#b14e14` | `#e08a4a` |
+| `--dx-teal` / `--dx-purple` | `#1b9aaa` / `#8a63d2` | — |
+| `--dx-teal-text` | `#0e7280` | `#3fbccb` |
+| `--dx-purple-text` | `#6d48c0` | `#ab8ce4` |
+| `--dx-sel` | `color-mix(in srgb, var(--dx-accent) 12%, var(--dx-bg))` | — |
+
+Four rules make that work, and none of them is incidental:
+
+- **Defaults sit behind `:where(html)` / `:where(html.dark)`** — specificity
+  ZERO. Any host declaration (`:root { … }`, specificity 0,0,1) wins no
+  matter which stylesheet loads first. Defaults scoped to `.dx-app` would
+  instead defeat a host's `:root` override.
+- **Both default blocks are specificity 0, so source order decides between
+  them**: the dark block must stay AFTER the light one in the file.
+- **The tokens land on `<html>` itself**, so a pack's `readPalette()` can
+  read them off `document.documentElement` — which is how packs actually
+  read a theme.
+- **`--dx-sel` stays an expression, not a literal**, so a host that overrides
+  only `--dx-accent` still gets a matching selection tint.
+
+Dark styling keys off a `dark` class on `<html>` (keep that convention). A
+host that overrides a token owns it in BOTH themes — its declaration outranks
+the dark default too. `apps/harness-vue/index.html` overrides exactly the
+accent pair and lets the rest fall through, so the harness proves the
+defaults and the override path at once.
 
 ## Toolchain
 

@@ -2,16 +2,17 @@
  * The boxes reference pack — the smallest honest language.
  *
  * Boxes exist, link, unlink, leave, and (the one event) pulse. The pack's
- * whole job is to be dumbshow's SECOND consumer: every contract hook the
- * daft pack implements richly, boxes implements minimally, so anything
- * daft-shaped that leaks into the generic machinery fails here first.
+ * whole job is to be dumbshow's SECOND consumer: every contract hook a
+ * production pack implements richly, boxes implements minimally, so
+ * anything pack-shaped that leaks into the generic machinery fails here
+ * first.
  *
  * The pack types itself against the real contract — `DiagramLanguage`
  * from `../src` — so the whole hook surface typechecks here.
  *
- * Document format v1 carries the daft-shaped seed schema, so the boxes
- * pack keeps seeds empty (world() ignores the seed) — a generic seed
- * schema is the planned document-version bump. Placements it does use:
+ * Document format v1 carries a seed schema the generic model defines, so
+ * the boxes pack keeps seeds empty (world() ignores the seed) — pack-owned
+ * seeds are the planned document-version bump. Placements it does use:
  * `placements.repos[name]` pins a box where the author dragged it, read
  * into the world (`pins`) so cameras and acts agree.
  */
@@ -529,9 +530,9 @@ function squareMarker(
 }
 
 /**
- * Seeds stay empty under document format v1 (its seed schema belongs to
- * the daft pack); placements pin boxes — the one author geometry boxes
- * have, which is what lets a node drag move them.
+ * Seeds stay empty under document format v1 (the generic model owns that
+ * schema); placements pin boxes — the one author geometry boxes have,
+ * which is what lets a node drag move them.
  */
 export const BOXES_PACK: DiagramLanguage<World, Act, Scene, Step> = {
   ops: OPS,
