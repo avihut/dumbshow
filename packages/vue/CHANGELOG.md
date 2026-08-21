@@ -1,5 +1,12 @@
 # @dumbshow/vue
 
+## 0.4.1
+
+### Patch Changes
+
+- Updated dependencies [[`a882400`](https://github.com/avihut/dumbshow/commit/a88240055ffdc7a3bf70d133134ec873ed609851)]:
+  - @dumbshow/core@0.4.1
+
 ## 0.4.0
 
 ### Minor Changes
