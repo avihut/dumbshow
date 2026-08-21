@@ -4,11 +4,13 @@
  * A press on a draggable calls `start`; below a 4px travel threshold the
  * release is a tap (the element's click behavior), past it the drag
  * engages: pointer capture keeps events flowing, registered drop zones
- * resolve the hover into a typed target, the ghost layer renders from
- * reactive state, and edges of scrollable zones auto-scroll. Every drop
- * funnels through `applyDrop` — the single place a (source, target) pair
- * becomes a document mutation. What a CANVAS drop means is the pack's to
- * say (entities.canvasDrop); timeline drops are pure editor mechanics.
+ * resolve the hover into a typed target, the ghost layer renders chips and
+ * rows from reactive state (a dragged node shows no ghost — the stage
+ * previews its drop live), edges of scrollable zones auto-scroll, and
+ * Escape abandons the drag. Every drop funnels through `applyDrop` — the
+ * single place a (source, target) pair becomes a document mutation. What a
+ * CANVAS drop means is the pack's to say (entities.canvasDrop); timeline
+ * drops are pure editor mechanics.
  */
 
 import { reactive } from "vue";
@@ -112,6 +114,12 @@ export function createDnd(
         el.removeEventListener("pointermove", move);
         el.removeEventListener("pointerup", up);
         el.removeEventListener("pointercancel", cancel);
+        window.removeEventListener("keydown", key);
+        try {
+          el.releasePointerCapture(event.pointerId);
+        } catch {
+          // Nothing captured (a synthetic pointer, or already released).
+        }
         const active = state.active;
         state.active = null;
         if (!engaged) {
@@ -122,6 +130,12 @@ export function createDnd(
       };
       const up = (): void => finish(true);
       const cancel = (): void => finish(false);
+      /** Escape abandons an engaged drag: nothing drops, the press is over. */
+      const key = (e: KeyboardEvent): void => {
+        if (e.key !== "Escape" || !engaged) return;
+        e.preventDefault();
+        finish(false);
+      };
 
       try {
         el.setPointerCapture(event.pointerId);
@@ -131,6 +145,7 @@ export function createDnd(
       el.addEventListener("pointermove", move);
       el.addEventListener("pointerup", up);
       el.addEventListener("pointercancel", cancel);
+      window.addEventListener("keydown", key);
     },
   };
 }

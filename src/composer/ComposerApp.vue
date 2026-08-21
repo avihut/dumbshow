@@ -12,8 +12,8 @@ import { createPlayer, type Player, type StepDef } from "../engine";
 import type { ActLike, DiagramLanguage, VerbArgs } from "../language";
 import type { EditorSelection } from "./AttributesForm.vue";
 import CatalogPane from "./CatalogPane.vue";
-import { derive } from "./derive";
-import { applyDrop, createDnd, dragLabel } from "./dnd";
+import { derive, withCamsOf } from "./derive";
+import { applyDrop, createDnd, type DragState, dragLabel } from "./dnd";
 import { type ComposerDoc, emptyDoc } from "./doc";
 import { renderGifBlob } from "./export/gif";
 import { renderPngBlob } from "./export/png";
@@ -79,10 +79,25 @@ const props = defineProps<{
  * document, creates a fresh player (autoplay off — the composer never
  * autoplays), and lands settled + paused on the affected step. The stage
  * and shell watch the player prop and re-attach in place.
+ *
+ * A node drag previews live: every pointer move applies the very mutation
+ * the drop would (`applyDrop` against the base document) to a preview
+ * document, rebuilt with the base cameras so the frame never slides under
+ * the pointer and landed settled on the playhead's step; release commits
+ * that mutation once, cancel restores the base. Canvas edits keep the
+ * playhead's step — they never jump it to the end.
  */
 
 const doc = shallowRef<ComposerDoc>(emptyDoc());
-const derived = computed(() => derive(doc.value, props.lang));
+/* The live-drag preview: the document a node drag would commit if released
+ * right now — derived and played exactly like the real one, never
+ * persisted. Everything downstream reads `derived`, which prefers it. */
+const preview = shallowRef<ComposerDoc | null>(null);
+const baseDerived = computed(() => derive(doc.value, props.lang));
+const previewDerived = computed(() =>
+  preview.value ? derive(preview.value, props.lang) : null,
+);
+const derived = computed(() => previewDerived.value ?? baseDerived.value);
 const showPlayerBar = ref(true);
 const termMin = ref(false);
 
@@ -121,19 +136,21 @@ function teardownPlayer(): void {
   playing.value = false;
 }
 
-/** Recreate the player over the current derivation, landing settled and
- * paused on `land` (a compiled step index). */
-function rebuild(land: number): void {
+/** Recreate the player over `steps` (default: the current derivation),
+ * landing settled and paused on `land` (a compiled step index). */
+function rebuild(
+  land: number,
+  steps: StepDef<ActLike>[] = derived.value.steps,
+): void {
   teardownPlayer();
-  const d = derived.value;
-  if (!d.steps.length) {
+  if (!steps.length) {
     duration.value = 0;
     time.value = 0;
     activeStep.value = -1;
     return;
   }
   const p = createPlayer({
-    script: d.steps,
+    script: steps,
     autoplay: false,
     loop: false,
     devHandle: props.devHandle,
@@ -150,7 +167,7 @@ function rebuild(land: number): void {
     }),
   ];
   duration.value = p.compiled.duration;
-  p.settle(land >= 0 ? land : d.steps.length - 1);
+  p.settle(land >= 0 ? land : steps.length - 1);
   player.value = p;
   activeStep.value = p.current();
   time.value = p.clock();
@@ -237,26 +254,94 @@ function selectItem(index: number): void {
 }
 
 /* Drag-and-drop: chips land on the timeline or (elements) on the canvas,
- * rows reorder; every drop funnels through applyDrop. */
+ * rows reorder, nodes move; every drop funnels through applyDrop. A node
+ * drag is previewed live (below), and its drop commits the same mutation
+ * against the base document. Canvas edits keep the playhead's step. */
+function commitCanvasEdit(next: ComposerDoc): void {
+  preview.value = null;
+  doc.value = next;
+  rebuild(activeStep.value);
+}
+
+/** Back to the base document, settled on the playhead's step. */
+function dropPreview(): void {
+  if (!preview.value) return;
+  preview.value = null;
+  rebuild(activeStep.value);
+}
+
 const dnd = createDnd((source, target) => {
+  cancelPreviewFrame();
   const result = applyDrop(
     props.lang,
     doc.value,
-    derived.value,
+    baseDerived.value,
     source,
     target,
   );
-  if (!result) return;
+  if (!result) {
+    dropPreview();
+    return;
+  }
   if ("error" in result) {
+    dropPreview();
     showNotice(result.error);
     return;
   }
-  applyEdit(result.doc, result.focus);
+  if (target.kind === "canvas") commitCanvasEdit(result.doc);
+  else applyEdit(result.doc, result.focus);
   if (result.selectItem !== undefined)
     selected.value = { type: "item", index: result.selectItem };
   else if (result.selectEntity)
     selected.value = { type: "entity", sel: result.selectEntity };
 });
+
+/* The live preview. Pointer moves coalesce to animation frames; each
+ * frame applies the drop the pointer describes to the base document and
+ * plays the result — with the base cameras, so the frame never slides
+ * under the pointer, settled on the playhead's step, so nothing jumps. A
+ * move that describes no valid drop (off the canvas, a refused target)
+ * shows the base document again. */
+let previewFrame = 0;
+let previewState: DragState | null = null;
+
+function cancelPreviewFrame(): void {
+  if (previewFrame) cancelAnimationFrame(previewFrame);
+  previewFrame = 0;
+}
+
+function applyPreview(active: DragState | null): void {
+  if (active?.source.kind !== "node" || active.target?.kind !== "canvas") {
+    dropPreview();
+    return;
+  }
+  const result = applyDrop(
+    props.lang,
+    doc.value,
+    baseDerived.value,
+    active.source,
+    active.target,
+  );
+  if (!result || "error" in result) {
+    dropPreview();
+    return;
+  }
+  preview.value = result.doc;
+  const steps = previewDerived.value?.steps ?? [];
+  rebuild(activeStep.value, withCamsOf(steps, baseDerived.value.steps));
+}
+
+watch(
+  () => dnd.state.active,
+  (active) => {
+    previewState = active;
+    if (previewFrame) return;
+    previewFrame = requestAnimationFrame(() => {
+      previewFrame = 0;
+      applyPreview(previewState);
+    });
+  },
+);
 
 /** A shell command was clicked: select its item, park on its checkpoint. */
 function jumpToStep(step: number): void {
@@ -593,6 +678,7 @@ onBeforeUnmount(() => {
   document.documentElement.classList.remove("dx-lock");
   clearTimeout(draftTimer);
   clearTimeout(noticeTimer);
+  cancelPreviewFrame();
   teardownPlayer();
 });
 </script>
@@ -707,7 +793,7 @@ onBeforeUnmount(() => {
       :chapters="derived.chapters"
     />
     <div
-      v-if="dnd.state.active"
+      v-if="dnd.state.active && dnd.state.active.source.kind !== 'node'"
       class="dx-ghost"
       :style="{
         left: `${dnd.state.active.x + 10}px`,

@@ -7,7 +7,8 @@ timeline compiler + headless player; `src/render-core.ts` the replay cursor,
 camera math, and canvas attachment; `src/transcript.ts` the shell projection;
 `src/composer/` the editor (panes, document model, exports). `harness/` mounts
 the editor with the **boxes** reference pack — the second consumer that keeps
-the contract honest. The production pack (daft's) lives in the daft repo,
+the contract honest (boxes pin through `placements.repos`, so node drags and
+every marker hook are exercised there too). The production pack (daft's) lives in the daft repo,
 which also carries the Playwright/golden test net that pins this machinery's
 behavior; do not break parity casually.
 
@@ -42,7 +43,20 @@ behavior; do not break parity casually.
   and exports omit them.
 - **Drag-and-drop law.** What a canvas drop MEANS belongs to the pack
   (`entities.canvasDrop`); rows reorder on the timeline; a canvas-entity
-  drag has no timeline meaning.
+  drag has no timeline meaning. A node drag previews LIVE: each pointer
+  move (coalesced to animation frames) applies the drop's own mutation to
+  the base document as a preview — never persisted, `derived` prefers it —
+  rebuilt with the base cameras (`withCamsOf`, so the frame never slides
+  under the pointer) at the playhead's clock; release commits once,
+  Escape/cancel restores the base. Drop targets resolve against the hits
+  captured at press time (the preview moves the node under the pointer).
+  Canvas edits keep the playhead; node drags show no DOM ghost.
+- **Pointer affordances are pack-painted, editor-driven.** The stage sets
+  `data-hover` / `data-dragging` on `.dx-canvas-wrap` (the cursor lives in
+  composer.css) and composes the pack's `selectionOverlay`, `hoverOverlay`,
+  and `dragOverlay` markers into one overlay per frame — all identity-based:
+  a marker finds its entity in each frame's hits. `entities.draggable(hit)`
+  makes a hit tap-only (edges that select but never move).
 - **Exports never lie** (`composer/export/`). The offline renderer replays
   compiled events through the same `drawScene` as the live view; reduced
   motion is hard-coded OFF there. PNG = 2x transparent still; GIF composites

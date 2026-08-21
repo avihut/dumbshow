@@ -11,15 +11,20 @@
  *
  * Document format v1 carries the daft-shaped seed schema, so the boxes
  * pack keeps seeds empty (world() ignores the seed) — a generic seed
- * schema is the planned document-version bump.
+ * schema is the planned document-version bump. Placements it does use:
+ * `placements.repos[name]` pins a box where the author dragged it, read
+ * into the world (`pins`) so cameras and acts agree.
  */
 
-import type {
-  DiagramLanguage,
-  OpSpecOf,
-  ParseOutcomeOf,
-  StepDef,
-  VerbArgs,
+import {
+  type ComposerDoc,
+  type DiagramLanguage,
+  type OpSpecOf,
+  type ParseOutcomeOf,
+  type Placements,
+  type StepDef,
+  setRepoPlacement,
+  type VerbArgs,
 } from "../src";
 
 type Step = StepDef<Act>;
@@ -36,6 +41,8 @@ export interface WorldBox {
 export interface World {
   boxes: WorldBox[];
   links: [string, string][];
+  /** Author-pinned positions (the document's placements), by box name. */
+  pins: Record<string, { x: number; y: number }>;
 }
 
 export type Act =
@@ -56,7 +63,16 @@ const SPOTS = [
 ];
 
 function emptyWorld(): World {
-  return { boxes: [], links: [] };
+  return { boxes: [], links: [], pins: {} };
+}
+
+/** The world's pins, read from the document's placements (repos slot). */
+function pinsOf(placements: unknown): World["pins"] {
+  const pins: World["pins"] = {};
+  const repos = (placements as Placements | undefined)?.repos ?? {};
+  for (const [name, p] of Object.entries(repos))
+    pins[name] = { x: p.x, y: p.y };
+  return pins;
 }
 
 function findBox(world: World, name: string): WorldBox | undefined {
@@ -274,7 +290,7 @@ function drawScene(ctx: CanvasRenderingContext2D, frame: DrawFrame): void {
 /* ---------------------------------- ops ----------------------------------- */
 
 function addStep(world: World, name: string): Step {
-  const spot = SPOTS[world.boxes.length % SPOTS.length];
+  const spot = world.pins[name] ?? SPOTS[world.boxes.length % SPOTS.length];
   world.boxes.push({ name, x: spot.x, y: spot.y });
   return {
     title: `Add ${name}`,
@@ -483,16 +499,49 @@ function parseCommand(line: string, world: World): ParseOutcomeOf {
 
 /* --------------------------------- pack ----------------------------------- */
 
+/* ------------------------------- markers --------------------------------- */
+
+/** A square marker around a named box, drawn from each frame's hits —
+ * the same identity-based shape every marker hook returns. */
+function squareMarker(
+  name: string,
+  width: number,
+  alpha: number,
+  pad: number,
+  glow: boolean,
+): (ctx: CanvasRenderingContext2D, hits: unknown[]) => void {
+  const { accent } = readPalette();
+  return (ctx, hits) => {
+    const h = (hits as Hit[]).find((x) => x.name === name);
+    if (!h) return;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = width;
+    if (glow) {
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = 12;
+    }
+    const half = 16 + pad;
+    ctx.strokeRect(h.sx - half, h.sy - half, half * 2, half * 2);
+    ctx.restore();
+  };
+}
+
 /**
  * Seeds stay empty under document format v1 (its seed schema belongs to
- * the daft pack); placements pass through untouched.
+ * the daft pack); placements pin boxes — the one author geometry boxes
+ * have, which is what lets a node drag move them.
  */
 export const BOXES_PACK: DiagramLanguage<World, Act, Scene, Step> = {
   ops: OPS,
   emptyWorld,
   scene: { createScene, applyAct, drawScene, camFor, readPalette, pick },
   seed: {
-    world: (): World => emptyWorld(),
+    world: (_seed: unknown, placements: unknown): World => ({
+      ...emptyWorld(),
+      pins: pinsOf(placements),
+    }),
     step: (world: World): Step => ({
       title: "Scene",
       cam: camFor(world),
@@ -501,21 +550,39 @@ export const BOXES_PACK: DiagramLanguage<World, Act, Scene, Step> = {
     }),
   },
   placements: {
+    // Positions flow through the world (pins), so steps need no patching.
     patchStep: (): void => {},
-    fromCompiled: (): {
-      repos: Record<string, never>;
-      wts: Record<string, never>;
-    } => ({
-      repos: {},
-      wts: {},
-    }),
+    fromCompiled: (compiled): Placements => {
+      const repos: Placements["repos"] = {};
+      for (const { act } of compiled.events) {
+        const a = act as Act;
+        if (a.kind === "box") repos[a.name] = { x: a.x, y: a.y };
+      }
+      return { repos, wts: {} };
+    },
   },
   entities: {
     elements: [],
     label: (hit: unknown): string => (hit as Hit).name,
     select: (hit: unknown): unknown => hit,
-    selectionOverlay: (): null => null,
-    canvasDrop: (): null => null,
+    selectionOverlay: (sel: unknown) =>
+      squareMarker((sel as Hit).name, 2, 0.95, 4, false),
+    hoverOverlay: (sel: unknown) =>
+      squareMarker((sel as Hit).name, 1.5, 0.5, 6, false),
+    dragOverlay: (sel: unknown) =>
+      squareMarker((sel as Hit).name, 2.5, 1, 5, true),
+    // A dragged box pins where it lands; nothing else drops on this canvas.
+    canvasDrop: (drop) =>
+      drop.source.kind === "node"
+        ? {
+            doc: setRepoPlacement(
+              drop.doc as ComposerDoc,
+              (drop.source.hit as Hit).name,
+              { x: Math.round(drop.wx), y: Math.round(drop.wy) },
+            ),
+            select: drop.source.hit,
+          }
+        : null,
   },
   parseCommand,
   shellVerb: (text: string): string => (text.startsWith("box") ? "box" : ""),

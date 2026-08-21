@@ -109,3 +109,29 @@ export function derive<W, A extends ActLike, S>(
     compiled: compile(steps),
   };
 }
+
+/**
+ * The same steps with the cameras of `from` (matched by step and beat
+ * index) — how a live preview keeps the base document's framing: a scene
+ * re-derived from moved geometry would otherwise re-fit its camera and
+ * slide under the pointer. Steps or beats `from` lacks keep their own.
+ */
+export function withCamsOf<A extends ActLike>(
+  steps: StepDef<A>[],
+  from: StepDef<A>[],
+): StepDef<A>[] {
+  return steps.map((step, i) => {
+    const base = from[i];
+    if (!base) return step;
+    return {
+      ...step,
+      cam: base.cam,
+      beats: step.beats.map((beat, j) => {
+        const b = base.beats[j];
+        return "cam" in beat && b && "cam" in b
+          ? { ...beat, cam: b.cam }
+          : beat;
+      }),
+    };
+  });
+}

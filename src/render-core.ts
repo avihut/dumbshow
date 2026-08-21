@@ -138,7 +138,17 @@ export interface DiagramView<H> {
   toScreen(wx: number, wy: number): [number, number];
   /** Topmost entity at a screen point, from the last frame's geometry. */
   hitTest(sx: number, sy: number): H | null;
+  /** The last frame's pickable geometry, copied — so a pointer can be
+   * resolved against a moment (where things stood when a drag began)
+   * while the frames move on. */
+  hits(): H[];
   setOverlay(fn: OverlayFn<H> | null): void;
+  /**
+   * Swap the clock source behind the same canvas — the rebuild-in-place
+   * path. Size, observers, and the overlay stay; the compiled script and
+   * its replay cursor change, and the frame redraws at the new clock.
+   */
+  setPlayer(player: Player<ActLike>): void;
 }
 
 export interface AttachOptions<H> {
@@ -170,21 +180,22 @@ export interface ViewHooks<A extends ActLike, S, P, H>
  */
 export function attachDiagramView<A extends ActLike, S, P, H>(
   canvas: HTMLCanvasElement,
-  player: Player<A>,
+  initial: Player<A>,
   hooks: ViewHooks<A, S, P, H>,
   opts?: AttachOptions<H>,
 ): DiagramView<H> | null {
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
-  const compiled = player.compiled;
-  const reduced = player.reducedMotion;
+  let player = initial;
+  let compiled = player.compiled;
+  let reduced = player.reducedMotion;
 
   let palette = hooks.readPalette();
   let width = 0;
   let height = 0;
   let overlay: OverlayFn<H> | null = opts?.overlay ?? null;
   const hits: H[] = [];
-  const cursor = createSceneCursor(compiled.events, hooks);
+  let cursor = createSceneCursor(compiled.events, hooks);
 
   function draw(): void {
     if (!ctx) return;
@@ -202,10 +213,11 @@ export function attachDiagramView<A extends ActLike, S, P, H>(
     overlay?.(ctx, hits);
   }
 
-  const offFrame = player.onFrame((t) => {
+  const onTick = (t: number): void => {
     cursor.sync(t);
     draw();
-  });
+  };
+  let offFrame = player.onFrame(onTick);
 
   const themeObserver = new MutationObserver(() => {
     palette = hooks.readPalette();
@@ -237,6 +249,9 @@ export function attachDiagramView<A extends ActLike, S, P, H>(
   cursor.sync(player.clock());
   draw();
 
+  const view = (): View =>
+    makeView(camRectAt(compiled.cams, cursor.time(), reduced), width, height);
+
   return {
     destroy() {
       offFrame();
@@ -247,24 +262,27 @@ export function attachDiagramView<A extends ActLike, S, P, H>(
     redraw: draw,
     camera: () => camRectAt(compiled.cams, cursor.time(), reduced),
     toWorld(sx, sy) {
-      const v = makeView(
-        camRectAt(compiled.cams, cursor.time(), reduced),
-        width,
-        height,
-      );
+      const v = view();
       return [v.wx(sx), v.wy(sy)];
     },
     toScreen(wx, wy) {
-      const v = makeView(
-        camRectAt(compiled.cams, cursor.time(), reduced),
-        width,
-        height,
-      );
+      const v = view();
       return [v.sx(wx), v.sy(wy)];
     },
     hitTest: (sx, sy) => hooks.pick(hits, sx, sy),
+    hits: () => hits.slice(),
     setOverlay(fn) {
       overlay = fn;
+      draw();
+    },
+    setPlayer(next) {
+      offFrame();
+      player = next as Player<A>;
+      compiled = player.compiled;
+      reduced = player.reducedMotion;
+      cursor = createSceneCursor(compiled.events, hooks);
+      offFrame = player.onFrame(onTick);
+      cursor.sync(player.clock());
       draw();
     },
   };

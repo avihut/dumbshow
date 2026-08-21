@@ -86,7 +86,8 @@ export interface ElementSpec {
 export interface EntityHooks<W, A extends ActLike> {
   /** The droppable element palette. */
   elements: ElementSpec[];
-  /** Ghost-chip label for a dragged scene entity (a draw-pass hit). */
+  /** Short human label for a scene entity (a draw-pass hit) — the editor
+   * uses it wherever an entity is named in chrome. */
   label(hit: unknown): string;
   /** The pack's selection value for a picked hit — carried opaquely by
    * the editor and handed back to pack surfaces (inspector, overlay). */
@@ -96,6 +97,26 @@ export interface EntityHooks<W, A extends ActLike> {
   selectionOverlay(
     selection: unknown,
   ): ((ctx: CanvasRenderingContext2D, hits: unknown[]) => void) | null;
+  /**
+   * The hover marker: painted over each frame's hits while the pointer
+   * rests on this entity (its selection value), and over a drop target
+   * while a drag passes across it. Absent or null = no marker.
+   */
+  hoverOverlay?(
+    selection: unknown,
+  ): ((ctx: CanvasRenderingContext2D, hits: unknown[]) => void) | null;
+  /**
+   * The lifted marker: painted over the entity being dragged, riding it
+   * through the live preview. Absent or null = no marker.
+   */
+  dragOverlay?(
+    selection: unknown,
+  ): ((ctx: CanvasRenderingContext2D, hits: unknown[]) => void) | null;
+  /**
+   * Can this hit be dragged? A press on a non-draggable entity taps
+   * (selects) however far it travels. Absent = every hit drags.
+   */
+  draggable?(hit: unknown): boolean;
   /**
    * Apply a canvas drop — an element chip or a dragged scene node — to
    * the document. The pack edits the document through the editor's pure
