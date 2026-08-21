@@ -1,0 +1,27 @@
+name: Feature request
+description: A capability the editor, engine, exports, or the language-pack contract should have
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What you are trying to do and where dumbshow stops you.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What you would change. If it touches the `DiagramLanguage` contract, say which hook and what the boxes reference pack would implement for it.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - editor (panes, timeline, canvas, shell)
+        - engine / player
+        - exports (PNG, GIF, webm, script)
+        - language-pack contract
+        - documentation
+        - other

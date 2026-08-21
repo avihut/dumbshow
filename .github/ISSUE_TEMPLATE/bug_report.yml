@@ -1,0 +1,33 @@
+name: Bug report
+description: Something in the editor, engine, exports, or contract misbehaves
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what you got.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: If it reproduces in the harness (`mise run dev`), say so — that rules out the language pack. A document JSON or a shell transcript helps.
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: dumbshow version
+      placeholder: "0.2.0"
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      placeholder: "Chrome 140 on macOS 15; Vue 3.5.x; consumer: <your host>"
