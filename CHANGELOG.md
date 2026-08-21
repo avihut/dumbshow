@@ -1,5 +1,9 @@
 # @avihut/dumbshow
 
+> Historical — the changelog of the single package (0.1.0 to 0.2.0). The
+> packages that continue it, `@dumbshow/core` and `@dumbshow/vue`, keep their
+> changelogs under `packages/core/CHANGELOG.md` and `packages/vue/CHANGELOG.md`.
+
 ## 0.2.0
 
 ### Minor Changes
