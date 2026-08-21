@@ -5,15 +5,15 @@
  * release is a tap (the element's click behavior), past it the drag
  * engages: pointer capture keeps events flowing, registered drop zones
  * resolve the hover into a typed target, the ghost layer renders chips and
- * rows from reactive state (a dragged node shows no ghost — the stage
- * previews its drop live), edges of scrollable zones auto-scroll, and
+ * rows from the drag state — a container the caller supplies, a
+ * Vue-reactive object in @dumbshow/vue, so UI follows it (a dragged node
+ * shows no ghost — the stage previews its drop live), edges of scrollable zones auto-scroll, and
  * Escape abandons the drag. Every drop funnels through `applyDrop` — the
  * single place a (source, target) pair becomes a document mutation. What a
  * CANVAS drop means is the pack's to say (entities.canvasDrop); timeline
  * drops are pure editor mechanics.
  */
 
-import { reactive } from "vue";
 import type { ActLike, EntityHooks } from "../language";
 import type { Derived } from "./derive";
 import type { ComposerDoc } from "./doc";
@@ -41,6 +41,11 @@ export interface DragState {
   target: DropTarget | null;
 }
 
+/** The drag state container: `active` is the engaged drag, or null. */
+export interface DndState {
+  active: DragState | null;
+}
+
 export interface DropZone {
   id: string;
   el: HTMLElement;
@@ -54,7 +59,7 @@ const EDGE = 26;
 const EDGE_STEP = 7;
 
 export interface DndController {
-  state: { active: DragState | null };
+  state: DndState;
   registerZone(zone: DropZone): () => void;
   /**
    * Begin tracking a press. Below the travel threshold the release calls
@@ -63,10 +68,15 @@ export interface DndController {
   start(event: PointerEvent, source: DragSource, tap?: () => void): void;
 }
 
+/**
+ * `state` is the container the controller writes `active` into. Pass a
+ * reactive object (Vue `reactive`, a store proxy) to have panes follow the
+ * drag; the plain default serves headless use.
+ */
 export function createDnd(
   onDrop: (source: DragSource, target: DropTarget) => void,
+  state: DndState = { active: null },
 ): DndController {
-  const state = reactive<{ active: DragState | null }>({ active: null });
   const zones = new Map<string, DropZone>();
 
   function resolveAt(

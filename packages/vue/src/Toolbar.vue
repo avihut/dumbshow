@@ -1,21 +1,6 @@
 <script setup lang="ts">
-import { type Ref, ref } from "vue";
-
-export interface ExportEntry {
-  id: string;
-  label: string;
-  hint: string;
-  run: () => void | Promise<void>;
-}
-
-/** The host's corner link out of the editor — absent hides the corner. */
-export interface BackLink {
-  href: string;
-  /** Accessible label ("Back to …"). */
-  label: string;
-  /** The visible text beside the chevron. */
-  text: string;
-}
+import type { BackLink, ExportEntry } from "@dumbshow/core";
+import { ref } from "vue";
 
 const props = defineProps<{
   title: string;
@@ -25,9 +10,11 @@ const props = defineProps<{
   exporters: ExportEntry[];
   /** Host chrome: the back link (absent = hidden). */
   back?: BackLink | null;
-  /** Host theme binding — a writable dark-mode ref (absent = no toggle). */
-  isDark?: Ref<boolean> | null;
 }>();
+
+/** Host theme binding — `v-model:isDark`; null (the default when absent)
+ * hides the toggle. The host owns the theme: the toggle only asks. */
+const isDark = defineModel<boolean | null>("isDark", { default: null });
 
 const emit = defineEmits<{
   rename: [title: string];
@@ -56,8 +43,7 @@ async function runExport(entry: ExportEntry): Promise<void> {
 }
 
 function toggleTheme(): void {
-  const dark = props.isDark;
-  if (dark) dark.value = !dark.value;
+  if (isDark.value !== null) isDark.value = !isDark.value;
 }
 </script>
 
@@ -144,13 +130,13 @@ function toggleTheme(): void {
       Scrubber
     </button>
     <button
-      v-if="isDark"
+      v-if="isDark !== null"
       class="dx-icon-btn"
       type="button"
-      :aria-label="isDark.value ? 'Switch to light theme' : 'Switch to dark theme'"
+      :aria-label="isDark ? 'Switch to light theme' : 'Switch to dark theme'"
       @click="toggleTheme"
     >
-      <svg v-if="isDark.value" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+      <svg v-if="isDark" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
         <circle cx="8" cy="8" r="3.2" />
         <path d="M8 1.5v1.8M8 12.7v1.8M1.5 8h1.8M12.7 8h1.8M3.4 3.4l1.3 1.3M11.3 11.3l1.3 1.3M12.6 3.4l-1.3 1.3M4.7 11.3l-1.3 1.3" />
       </svg>

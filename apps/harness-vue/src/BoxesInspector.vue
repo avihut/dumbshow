@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import type { World } from "@dumbshow/boxes";
-import type { VerbArgs, VocabLang } from "@dumbshow/core";
-import {
-  AttributesForm,
-  type EditorSelection,
-  type ItemSelection,
-} from "@dumbshow/vue";
+import type {
+  EditorSelection,
+  ItemSelection,
+  VerbArgs,
+  VocabLang,
+} from "@dumbshow/core";
+import { AttributesForm } from "@dumbshow/vue";
 import { computed } from "vue";
 
 /**

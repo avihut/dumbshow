@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DocItem, VerbArgs, VocabLang } from "@dumbshow/core";
+import type { ItemSelection, VerbArgs, VocabLang } from "@dumbshow/core";
 import { computed } from "vue";
 
 /**
@@ -10,21 +10,6 @@ import { computed } from "vue";
  * fields. Entity selections render through the pack's own attributes
  * component instead — the pane composing this form decides which shows.
  */
-
-export interface ItemSelection {
-  type: "item";
-  index: number;
-  item: DocItem;
-  /** World before the item ran (derived.worlds[index]) — pack data. */
-  world: unknown;
-  skipped: boolean;
-}
-
-/**
- * Everything the editor can have selected: a timeline item, or a scene
- * entity — a pack-shaped value (entities.select) carried opaquely.
- */
-export type EditorSelection = ItemSelection | { type: "entity"; sel: unknown };
 
 const props = defineProps<{
   lang: VocabLang;

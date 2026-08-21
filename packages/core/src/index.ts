@@ -24,6 +24,7 @@ export * from "./editor/dnd";
 export * from "./editor/doc";
 export * from "./editor/mutations";
 export * from "./editor/storage";
+export * from "./editor/types";
 export * from "./editor/vocabulary";
 export * from "./engine";
 export * from "./export/gif";

@@ -2,16 +2,21 @@
 import {
   type ActLike,
   applyDrop,
+  type BackLink,
   type Chip,
   type ComposerDoc,
   createDnd,
   createPlayer,
   type DiagramLanguage,
+  type DragSource,
   type DragState,
+  type DropTarget,
   derive,
   docSlug,
   downloadDoc,
   dragLabel,
+  type EditorSelection,
+  type ExportEntry,
   emptyDoc,
   insertItem,
   loadDraft,
@@ -43,18 +48,17 @@ import {
   computed,
   onBeforeUnmount,
   onMounted,
-  type Ref,
+  reactive,
   ref,
   shallowRef,
   watch,
 } from "vue";
-import type { EditorSelection } from "./AttributesForm.vue";
 import CatalogPane from "./CatalogPane.vue";
 import PlayerBar from "./PlayerBar.vue";
 import ShellTerminal from "./ShellTerminal.vue";
 import StageCanvas from "./StageCanvas.vue";
 import TimelinePane from "./TimelinePane.vue";
-import Toolbar, { type BackLink, type ExportEntry } from "./Toolbar.vue";
+import Toolbar from "./Toolbar.vue";
 
 const props = defineProps<{
   /** The language pack this editor speaks — its only source of meaning. */
@@ -63,8 +67,6 @@ const props = defineProps<{
   inspector: unknown;
   /** Host chrome: the toolbar's corner link (absent = hidden). */
   back?: BackLink | null;
-  /** Host theme binding — a writable dark-mode ref (absent = no toggle). */
-  isDark?: Ref<boolean> | null;
   /** Window handle for the player (console/test driving). Hosts gate it
    * on their own dev mode — passing a name always assigns it. */
   devHandle?: string;
@@ -72,6 +74,13 @@ const props = defineProps<{
    * `<slug>.<fileTag>.json` download suffix. Default: "dumbshow". */
   fileTag?: string;
 }>();
+
+/**
+ * Host theme binding — `v-model:isDark` (absent = no toggle): the host owns
+ * the theme; the toolbar's toggle asks for the flip through the update
+ * event, and the page flips its own class.
+ */
+const isDark = defineModel<boolean | null>("isDark", { default: null });
 
 /**
  * The composer — a full-window visual editor for diagrams and
@@ -279,7 +288,10 @@ function dropPreview(): void {
   rebuild(activeStep.value);
 }
 
-const dnd = createDnd((source, target) => {
+const dnd = createDnd(onDrop, reactive({ active: null }));
+
+/** The single drop handler: the funnel's verdict becomes an edit. */
+function onDrop(source: DragSource, target: DropTarget): void {
   cancelPreviewFrame();
   const result = applyDrop(
     props.lang,
@@ -303,7 +315,7 @@ const dnd = createDnd((source, target) => {
     selected.value = { type: "item", index: result.selectItem };
   else if (result.selectEntity)
     selected.value = { type: "entity", sel: result.selectEntity };
-});
+}
 
 /* The live preview. Pointer moves coalesce to animation frames; each
  * frame applies the drop the pointer describes to the base document and
@@ -700,7 +712,7 @@ onBeforeUnmount(() => {
       :player-bar="showPlayerBar"
       :exporters="exporters"
       :back="back"
-      :is-dark="isDark"
+      v-model:is-dark="isDark"
       @rename="applyMeta(setTitle(doc, $event))"
       @toggle-player-bar="showPlayerBar = !showPlayerBar"
       @save="save"
