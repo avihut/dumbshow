@@ -94,7 +94,12 @@ pnpm via mise (`mise run dev|build|test|lint|format|typecheck|changeset|ci`;
 7-day cooldown that is enforced, not just practiced: `pnpm-workspace.yaml`
 sets `minimumReleaseAge: 10080` (strict — an exact pin on a too-young
 release fails resolution instead of falling back) and Dependabot waits the
-same 7 days before proposing a bump. `vue-tsc` is the only real typechecker
+same 7 days before proposing a bump. `typescript` stays on the 6.x line (the last
+JS-based one) on purpose: TypeScript 7 is the native compiler without the
+programmatic API `vue-tsc` drives (typecheck and d.ts emit), so Dependabot
+ignores `typescript >= 7` (`.github/dependabot.yml`) while 6.x minors keep
+flowing; lift that the moment `vue-tsc` supports TS 7 — expected after TS
+7.1's stable API — and bump both together. `vue-tsc` is the only real typechecker
 (vite and esbuild never typecheck; the build runs it after vite — vue-tsc
 first would lose its d.ts to vite's emptyOutDir). Biome: the Vue domain is
 active here (vue is a direct dep), and biome 2.5's Vue analysis cannot see

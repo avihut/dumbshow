@@ -57,7 +57,7 @@
     "@changesets/changelog-github": "1.0.0",
     "@changesets/cli": "3.0.0",
     "@vitejs/plugin-vue": "6.0.8",
-    "typescript": "5.9.3",
+    "typescript": "6.0.3",
     "vite": "8.2.1",
     "vitest": "4.1.10",
     "vue": "3.5.41",

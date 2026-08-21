@@ -21,6 +21,15 @@ updates:
     # devDependencies are EXACT pins (CLAUDE.md) — bump the pin, never widen
     # it into a range.
     versioning-strategy: "increase"
+    ignore:
+      # why: TypeScript 7 is the native (Go) compiler and ships no programmatic
+      # compiler API — vue-tsc (our typecheck and d.ts emit) cannot run on it
+      # (ERR_PACKAGE_PATH_NOT_EXPORTED for typescript/lib/tsc). Stay on the
+      # 6.x line (the last JS-based one; its minors keep flowing) and lift this
+      # the moment vue-tsc supports TypeScript 7 — the stable programmatic API
+      # is slated for TS 7.1 — bumping both together.
+      - dependency-name: "typescript"
+        versions: [">= 7.0.0"]
     groups:
       npm-dependencies:
         patterns:
