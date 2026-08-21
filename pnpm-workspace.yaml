@@ -1,0 +1,8 @@
+# pnpm settings (pnpm 10+ reads its settings from this file).
+#
+# Dependency cooldown: refuse to resolve any release younger than 7 days
+# (10080 minutes). Strict — an exact pin on a too-young version fails instead
+# of falling back. Mirrors the Dependabot cooldown in .github/dependabot.yml,
+# so a manual `pnpm add` cannot beat the discipline either.
+minimumReleaseAge: 10080
+minimumReleaseAgeStrict: true

@@ -12,15 +12,15 @@ description = "Run the harness dev app (the editor + the boxes pack)"
 run = "pnpm dev"
 
 [tasks.build]
-description = "Typecheck and build the library to dist/"
+description = "Build the library to dist/ (vite first, then vue-tsc declarations)"
 run = "pnpm build"
 
 [tasks.test]
-description = "Run the test suite"
-run = "pnpm vitest run 2>/dev/null || echo 'no tests yet — the extraction brings the suite'"
+description = "Run the vitest suite"
+run = "pnpm test"
 
 [tasks.lint]
-description = "Biome check"
+description = "Biome check (lint + format, read-only)"
 run = "pnpm lint"
 
 [tasks.format]
@@ -28,5 +28,13 @@ description = "Biome check --write"
 run = "pnpm format"
 
 [tasks.typecheck]
-description = "vue-tsc, no emit"
+description = "vue-tsc, no emit (src, harness, tests)"
 run = "pnpm typecheck"
+
+[tasks.changeset]
+description = "Declare a change and its semver bump (writes .changeset/*.md)"
+run = "pnpm changeset"
+
+[tasks.ci]
+description = "Everything CI runs on a PR: lint, typecheck, build, test"
+depends = ["lint", "typecheck", "build", "test"]
