@@ -1,6 +1,6 @@
 {
   "name": "@dumbshow/core",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "The framework-free core of dumbshow: the language-pack contract, the timeline engine and headless player, the render core, the transcript projection, the editor's document model and drag mechanics, and the exporters.",
   "license": "FSL-1.1-MIT",
   "type": "module",
