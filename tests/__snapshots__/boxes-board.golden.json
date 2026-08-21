@@ -1,0 +1,408 @@
+{
+  "mapping": [
+    0,
+    0,
+    1,
+    1,
+    2,
+    3,
+    4,
+    4,
+    5,
+    -1,
+    -1
+  ],
+  "chapters": [
+    {
+      "title": "Board",
+      "item": 0,
+      "step": 0
+    },
+    {
+      "title": "Teardown",
+      "item": 6,
+      "step": 4
+    },
+    {
+      "title": "Never opens",
+      "item": 10,
+      "step": -1
+    }
+  ],
+  "seedStep": false,
+  "world": {
+    "boxes": [
+      {
+        "name": "beta",
+        "x": 240,
+        "y": -60
+      }
+    ],
+    "links": [],
+    "pins": {
+      "beta": {
+        "x": 240,
+        "y": -60
+      }
+    }
+  },
+  "steps": [
+    {
+      "title": "Add alpha",
+      "cam": {
+        "x": 0,
+        "y": 0,
+        "w": 460,
+        "h": 400
+      },
+      "beats": [
+        {
+          "cmd": "box add alpha"
+        },
+        {
+          "act": {
+            "kind": "box",
+            "name": "alpha",
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "out": "alpha is on the board",
+          "tone": "ok"
+        }
+      ]
+    },
+    {
+      "title": "Add beta",
+      "cam": {
+        "x": 120,
+        "y": -30,
+        "w": 560,
+        "h": 400
+      },
+      "beats": [
+        {
+          "cmd": "box add beta"
+        },
+        {
+          "act": {
+            "kind": "box",
+            "name": "beta",
+            "x": 240,
+            "y": -60
+          }
+        },
+        {
+          "out": "beta is on the board",
+          "tone": "ok"
+        },
+        {
+          "pause": 0.5
+        }
+      ]
+    },
+    {
+      "title": "Link alpha and beta",
+      "cam": {
+        "x": 120,
+        "y": -30,
+        "w": 560,
+        "h": 400
+      },
+      "beats": [
+        {
+          "cmd": "box link alpha beta"
+        },
+        {
+          "act": {
+            "kind": "link",
+            "a": "alpha",
+            "b": "beta"
+          }
+        }
+      ]
+    },
+    {
+      "title": "beta pulses",
+      "cam": {
+        "x": 120,
+        "y": -30,
+        "w": 560,
+        "h": 400
+      },
+      "beats": [
+        {
+          "act": {
+            "kind": "pulse",
+            "name": "beta"
+          }
+        },
+        {
+          "pause": 1
+        }
+      ]
+    },
+    {
+      "title": "Unlink alpha and beta",
+      "cam": {
+        "x": 120,
+        "y": -30,
+        "w": 560,
+        "h": 400
+      },
+      "beats": [
+        {
+          "cmd": "box unlink alpha beta"
+        },
+        {
+          "act": {
+            "kind": "unlink",
+            "a": "alpha",
+            "b": "beta"
+          }
+        }
+      ],
+      "silent": true
+    },
+    {
+      "title": "Remove alpha",
+      "cam": {
+        "x": 240,
+        "y": -60,
+        "w": 460,
+        "h": 400
+      },
+      "beats": [
+        {
+          "cmd": "box rm alpha"
+        },
+        {
+          "act": {
+            "kind": "unbox",
+            "name": "alpha"
+          }
+        },
+        {
+          "out": "alpha left the board",
+          "tone": "rust"
+        }
+      ]
+    }
+  ],
+  "compiled": {
+    "duration": 19.648000000000003,
+    "steps": [
+      {
+        "at": 0.6,
+        "end": 3.8120000000000003,
+        "cue": 1.362,
+        "title": "Add alpha"
+      },
+      {
+        "at": 3.8120000000000003,
+        "end": 7.5,
+        "cue": 4.550000000000001,
+        "title": "Add beta"
+      },
+      {
+        "at": 7.5,
+        "end": 10.306000000000001,
+        "cue": 8.406,
+        "title": "Link alpha and beta"
+      },
+      {
+        "at": 10.306000000000001,
+        "end": 12.806000000000001,
+        "cue": 10.306000000000001,
+        "title": "beta pulses"
+      },
+      {
+        "at": 12.806000000000001,
+        "end": 15.66,
+        "cue": 13.760000000000002,
+        "title": "Unlink alpha and beta",
+        "silent": true
+      },
+      {
+        "at": 15.66,
+        "end": 18.848000000000003,
+        "cue": 16.398,
+        "title": "Remove alpha"
+      }
+    ],
+    "term": [
+      {
+        "at": 0.6,
+        "typed": 1.362,
+        "kind": "cmd",
+        "text": "box add alpha",
+        "step": 0,
+        "checkpoint": true
+      },
+      {
+        "at": 1.762,
+        "typed": 1.762,
+        "kind": "ok",
+        "text": "alpha is on the board",
+        "step": 0,
+        "checkpoint": false
+      },
+      {
+        "at": 3.8120000000000003,
+        "typed": 4.550000000000001,
+        "kind": "cmd",
+        "text": "box add beta",
+        "step": 1,
+        "checkpoint": true
+      },
+      {
+        "at": 4.95,
+        "typed": 4.95,
+        "kind": "ok",
+        "text": "beta is on the board",
+        "step": 1,
+        "checkpoint": false
+      },
+      {
+        "at": 7.5,
+        "typed": 8.406,
+        "kind": "cmd",
+        "text": "box link alpha beta",
+        "step": 2,
+        "checkpoint": true
+      },
+      {
+        "at": 12.806000000000001,
+        "typed": 13.760000000000002,
+        "kind": "cmd",
+        "text": "box unlink alpha beta",
+        "step": 4,
+        "checkpoint": true,
+        "hidden": true
+      },
+      {
+        "at": 15.66,
+        "typed": 16.398,
+        "kind": "cmd",
+        "text": "box rm alpha",
+        "step": 5,
+        "checkpoint": true
+      },
+      {
+        "at": 16.798000000000002,
+        "typed": 16.798000000000002,
+        "kind": "rust",
+        "text": "alpha left the board",
+        "step": 5,
+        "checkpoint": false
+      }
+    ],
+    "events": [
+      {
+        "at": 1.762,
+        "act": {
+          "kind": "box",
+          "name": "alpha",
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "at": 4.95,
+        "act": {
+          "kind": "box",
+          "name": "beta",
+          "x": 240,
+          "y": -60
+        }
+      },
+      {
+        "at": 8.806000000000001,
+        "act": {
+          "kind": "link",
+          "a": "alpha",
+          "b": "beta"
+        }
+      },
+      {
+        "at": 10.306000000000001,
+        "act": {
+          "kind": "pulse",
+          "name": "beta"
+        }
+      },
+      {
+        "at": 14.16,
+        "act": {
+          "kind": "unlink",
+          "a": "alpha",
+          "b": "beta"
+        }
+      },
+      {
+        "at": 16.798000000000002,
+        "act": {
+          "kind": "unbox",
+          "name": "alpha"
+        }
+      }
+    ],
+    "cams": [
+      {
+        "at": 0.6,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "w": 460,
+          "h": 400
+        }
+      },
+      {
+        "at": 3.8120000000000003,
+        "rect": {
+          "x": 120,
+          "y": -30,
+          "w": 560,
+          "h": 400
+        }
+      },
+      {
+        "at": 7.5,
+        "rect": {
+          "x": 120,
+          "y": -30,
+          "w": 560,
+          "h": 400
+        }
+      },
+      {
+        "at": 10.306000000000001,
+        "rect": {
+          "x": 120,
+          "y": -30,
+          "w": 560,
+          "h": 400
+        }
+      },
+      {
+        "at": 12.806000000000001,
+        "rect": {
+          "x": 120,
+          "y": -30,
+          "w": 560,
+          "h": 400
+        }
+      },
+      {
+        "at": 15.66,
+        "rect": {
+          "x": 240,
+          "y": -60,
+          "w": 460,
+          "h": 400
+        }
+      }
+    ]
+  }
+}
