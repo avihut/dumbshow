@@ -1,2 +1,37 @@
-relations:
-  - url: git@github.com:avihut/daft.git
+# daft configuration for this repository. Relations to other repositories are
+# declared from their side, not from here.
+
+# Gitignored installs replicated into every new worktree — reflinked where the
+# filesystem can (APFS, btrfs, XFS reflink=1), skipped elsewhere rather than
+# byte-copied — so the install step below reconciles a warm tree instead of
+# fetching one. pnpm's node_modules is relative symlinks into
+# node_modules/.pnpm, so the replica is self-contained.
+copy:
+  paths:
+    - node_modules/
+  fallback: skip
+
+hooks:
+  post-clone:
+    jobs:
+      - name: mise trust
+        run: mise trust
+      - name: mise install
+        description: Install node and pnpm from mise.toml
+        run: mise install
+        needs: [mise trust]
+      - name: pnpm install
+        run: pnpm install --frozen-lockfile
+        needs: [mise install]
+  worktree-post-create:
+    jobs:
+      - name: mise trust
+        run: mise trust
+        tracks: [path]
+      - name: mise install
+        run: mise install
+        needs: [mise trust]
+      - name: pnpm install
+        description: Reconcile the replicated node_modules with the lockfile
+        run: pnpm install --frozen-lockfile --prefer-offline
+        needs: [mise install]
