@@ -1,60 +1,38 @@
 /**
  * The composer document — one serializable file, no modes.
  *
- * A document is `{ seed, timeline }`: the seed declares what already exists
- * when the story opens (repos, worktrees, relations — drawn with the full
- * grammar but no terminal lines), and the timeline is an ordered list of
- * items — language operations plus chapter/beat annotations. A *still* is simply
- * a document whose timeline was never played. Placements are authoring
- * data (where the author dragged things), never timeline events.
+ * A document is `{ seed, timeline, placements }`: the seed declares what
+ * already exists when the story opens (drawn with the full grammar but no
+ * terminal lines), the timeline is an ordered list of items — language
+ * operations plus chapter/beat annotations — and placements record where the
+ * author dragged things. A *still* is simply a document whose timeline was
+ * never played. Placements are authoring data, never timeline events.
  *
- * Everything in a document is data: names, args, flags. Keystrokes, derived
- * transcripts, and player state are never stored — the terminal is a
+ * `seed` and `placements` are PACK-DEFINED JSON. This model stores,
+ * serializes, and migrates them without reading their shape, and hands them
+ * to the pack through the seed and placement hooks — which is why every
+ * function here that has to touch one takes the pack's schema. They cross
+ * document-version bumps verbatim; a pack that evolves its own schema
+ * versions it inside its own JSON.
+ *
+ * Everything else in a document is data too: names, args, flags. Keystrokes,
+ * derived transcripts, and player state are never stored — the terminal is a
  * projection re-rendered from these items, which is what makes renames
  * rewrite history instead of leaving stale text behind.
  */
 
 import type { VerbArgs } from "../language";
 
-export const DOC_VERSION = 1;
-
-/** Explicit world-space repo position, written when the author drags. */
-export interface RepoPlacement {
-  x: number;
-  y: number;
-}
-
-/** Explicit polar worktree placement around its repo. */
-export interface WtPlacement {
-  ang: number;
-  dist: number;
-}
+export const DOC_VERSION = 2;
 
 /**
- * Author-pinned geometry. Worktree keys are `"repo:branch"`. Anything not
- * listed keeps its deterministic hash-derived position.
+ * The slice of a language this model needs: the two schemas it cannot read
+ * itself. A whole `DiagramLanguage` satisfies it structurally, so callers
+ * pass the pack they already hold.
  */
-export interface Placements {
-  repos: Record<string, RepoPlacement>;
-  wts: Record<string, WtPlacement>;
-}
-
-export interface SeedWt {
-  branch: string;
-  port?: string;
-  agent?: boolean;
-  merged?: boolean;
-}
-
-export interface SeedRepo {
-  name: string;
-  wts: SeedWt[];
-}
-
-/** The world as the story opens — rendered as scene, never as commands. */
-export interface Seed {
-  repos: SeedRepo[];
-  rels: [string, string][];
+export interface DocSchema {
+  seed: { empty(): unknown; parse(raw: unknown): unknown };
+  placements: { empty(): unknown; parse(raw: unknown): unknown };
 }
 
 export type DocItem =
@@ -65,18 +43,20 @@ export type DocItem =
 export interface ComposerDoc {
   version: number;
   title: string;
-  seed: Seed;
+  /** Pack-defined JSON: the world as the story opens. Opaque here. */
+  seed: unknown;
   timeline: DocItem[];
-  placements: Placements;
+  /** Pack-defined JSON: author-pinned geometry. Opaque here. */
+  placements: unknown;
 }
 
-export function emptyDoc(): ComposerDoc {
+export function emptyDoc(lang: DocSchema): ComposerDoc {
   return {
     version: DOC_VERSION,
     title: "Untitled scenario",
-    seed: { repos: [], rels: [] },
+    seed: lang.seed.empty(),
     timeline: [],
-    placements: { repos: {}, wts: {} },
+    placements: lang.placements.empty(),
   };
 }
 
@@ -102,39 +82,19 @@ function isFinite2(v: unknown): v is number {
   return typeof v === "number" && Number.isFinite(v);
 }
 
-function parseSeed(raw: unknown): Seed {
-  if (!isRecord(raw)) fail("seed is not an object");
-  const repos: SeedRepo[] = [];
-  if (!Array.isArray(raw.repos)) fail("seed.repos is not a list");
-  for (const r of raw.repos) {
-    if (!isRecord(r) || !isName(r.name)) fail("a seed repo has no name");
-    if (!Array.isArray(r.wts)) fail(`seed repo ${r.name} has no worktrees`);
-    const wts: SeedWt[] = [];
-    for (const w of r.wts) {
-      if (!isRecord(w) || !isName(w.branch))
-        fail(`a worktree in ${r.name} has no branch`);
-      wts.push({
-        branch: w.branch,
-        ...(isName(w.port) ? { port: w.port } : {}),
-        ...(w.agent === true ? { agent: true } : {}),
-        ...(w.merged === true ? { merged: true } : {}),
-      });
-    }
-    repos.push({ name: r.name, wts });
+/**
+ * Run one of the pack's parsers, surfacing whatever it throws as this
+ * document's parse failure — a pack raising a bare `Error("bad box")` still
+ * reads as `Not a composer document: seed — bad box`.
+ */
+function packParse(field: string, run: () => unknown): unknown {
+  try {
+    return run();
+  } catch (err) {
+    return fail(
+      `${field} — ${err instanceof Error ? err.message : String(err)}`,
+    );
   }
-  const rels: [string, string][] = [];
-  if (!Array.isArray(raw.rels)) fail("seed.rels is not a list");
-  for (const rel of raw.rels) {
-    if (
-      !Array.isArray(rel) ||
-      rel.length !== 2 ||
-      !isName(rel[0]) ||
-      !isName(rel[1])
-    )
-      fail("a relation is not a [repo, repo] pair");
-    rels.push([rel[0], rel[1]]);
-  }
-  return { repos, rels };
 }
 
 function parseTimeline(raw: unknown): DocItem[] {
@@ -167,42 +127,29 @@ function parseTimeline(raw: unknown): DocItem[] {
   });
 }
 
-function parsePlacements(raw: unknown): Placements {
-  if (raw === undefined) return { repos: {}, wts: {} };
-  if (!isRecord(raw)) fail("placements is not an object");
-  const repos: Record<string, RepoPlacement> = {};
-  if (isRecord(raw.repos)) {
-    for (const [name, p] of Object.entries(raw.repos)) {
-      if (!isRecord(p) || !isFinite2(p.x) || !isFinite2(p.y))
-        fail(`placement for repo ${name} is malformed`);
-      repos[name] = { x: p.x, y: p.y };
-    }
-  }
-  const wts: Record<string, WtPlacement> = {};
-  if (isRecord(raw.wts)) {
-    for (const [key, p] of Object.entries(raw.wts)) {
-      if (!isRecord(p) || !isFinite2(p.ang) || !isFinite2(p.dist))
-        fail(`placement for worktree ${key} is malformed`);
-      wts[key] = { ang: p.ang, dist: p.dist };
-    }
-  }
-  return { repos, wts };
+/**
+ * Migration ladder for older document versions — one rung per bump, each
+ * taking the raw JSON one version forward.
+ */
+function migrate(
+  raw: Record<string, unknown>,
+  from: number,
+): Record<string, unknown> {
+  let out = raw;
+  // v1 → v2: seed and placements became pack-owned. Under v1 they already
+  // held the shape of the one pack that wrote them and nobody else's, so
+  // they cross untouched — only ownership moved.
+  if (from < 2) out = { ...out, version: 2 };
+  return out;
 }
 
 /**
- * Migration ladder for older document versions. v1 is the first shipped
- * format, so the ladder is empty; each future bump adds one rung here.
+ * Parse and validate a serialized document against the pack that will read
+ * it. Throws with a human-readable message on malformed input, and refuses
+ * documents written by a NEWER composer than this one (they may carry
+ * meaning we would silently drop).
  */
-function migrate(raw: Record<string, unknown>): Record<string, unknown> {
-  return raw;
-}
-
-/**
- * Parse and validate a serialized document. Throws with a human-readable
- * message on malformed input, and refuses documents written by a NEWER
- * composer than this one (they may carry meaning we would silently drop).
- */
-export function parseDoc(json: string): ComposerDoc {
+export function parseDoc(json: string, lang: DocSchema): ComposerDoc {
   let raw: unknown;
   try {
     raw = JSON.parse(json);
@@ -215,12 +162,20 @@ export function parseDoc(json: string): ComposerDoc {
     fail(
       `written by a newer composer (v${raw.version}; this one reads up to v${DOC_VERSION})`,
     );
-  const migrated = migrate(raw);
+  const migrated = migrate(raw, raw.version);
   return {
     version: DOC_VERSION,
     title: isName(migrated.title) ? migrated.title : "Untitled scenario",
-    seed: parseSeed(migrated.seed ?? { repos: [], rels: [] }),
+    seed:
+      migrated.seed == null
+        ? lang.seed.empty()
+        : packParse("seed", () => lang.seed.parse(migrated.seed)),
     timeline: parseTimeline(migrated.timeline ?? []),
-    placements: parsePlacements(migrated.placements),
+    placements:
+      migrated.placements == null
+        ? lang.placements.empty()
+        : packParse("placements", () =>
+            lang.placements.parse(migrated.placements),
+          ),
   };
 }

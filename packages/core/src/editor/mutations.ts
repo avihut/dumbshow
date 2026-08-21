@@ -8,13 +8,7 @@
  */
 
 import type { VerbArgs } from "../language";
-import type {
-  ComposerDoc,
-  DocItem,
-  Placements,
-  RepoPlacement,
-  WtPlacement,
-} from "./doc";
+import type { ComposerDoc, DocItem } from "./doc";
 
 function clone(doc: ComposerDoc): ComposerDoc {
   return structuredClone(doc);
@@ -142,44 +136,30 @@ export function setTitle(doc: ComposerDoc, title: string): ComposerDoc {
   return next;
 }
 
-/* ------------------------------ placements ------------------------------- */
+/* --------------------------- pack-owned JSON ----------------------------- */
 
-export function setRepoPlacement(
-  doc: ComposerDoc,
-  name: string,
-  p: RepoPlacement | null,
-): ComposerDoc {
-  const next = clone(doc);
-  if (p) next.placements.repos[name] = { x: p.x, y: p.y };
-  else delete next.placements.repos[name];
-  return next;
-}
-
-export function setWtPlacement(
-  doc: ComposerDoc,
-  key: string,
-  p: WtPlacement | null,
-): ComposerDoc {
-  const next = clone(doc);
-  if (p) next.placements.wts[key] = { ang: p.ang, dist: p.dist };
-  else delete next.placements.wts[key];
-  return next;
-}
-
-/**
- * Pin currently-derived geometry into the document without overriding pins
- * the author already made (existing entries win). Used before mutations
- * that would otherwise shuffle hash-derived positions — renames, sibling
- * inserts — so the scene the author sees is the scene that persists.
+/*
+ * The seed and the placements are the pack's JSON: this module cannot read
+ * their shape, so it offers no key-level helpers, only these two whole-value
+ * writes. A pack that pins geometry or edits the opening scene computes the
+ * next value itself — from `placements.fromCompiled`, a drop position, a
+ * rename — and hands the whole thing back. Cloning the document stays here,
+ * where the purity rule lives.
  */
-export function freezePlacements(
+
+/** Replace the document's opening state. */
+export function setSeed(doc: ComposerDoc, seed: unknown): ComposerDoc {
+  const next = clone(doc);
+  next.seed = structuredClone(seed);
+  return next;
+}
+
+/** Replace the document's author-pinned geometry. */
+export function setPlacements(
   doc: ComposerDoc,
-  derived: Placements,
+  placements: unknown,
 ): ComposerDoc {
   const next = clone(doc);
-  for (const [name, p] of Object.entries(derived.repos))
-    if (!next.placements.repos[name]) next.placements.repos[name] = { ...p };
-  for (const [key, p] of Object.entries(derived.wts))
-    if (!next.placements.wts[key]) next.placements.wts[key] = { ...p };
+  next.placements = structuredClone(placements);
   return next;
 }

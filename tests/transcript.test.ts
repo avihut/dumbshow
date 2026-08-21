@@ -3,7 +3,7 @@ import { derive, emptyDoc, transcriptAt, visibleLines } from "@dumbshow/core";
 import { describe, expect, it } from "vitest";
 
 function term() {
-  const doc = emptyDoc();
+  const doc = emptyDoc(BOXES_PACK);
   doc.timeline = [
     { kind: "op", op: "add", args: { name: "alpha" } },
     { kind: "op", op: "add", args: { name: "beta" }, silent: true },

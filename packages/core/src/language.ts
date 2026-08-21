@@ -139,22 +139,44 @@ export interface EntityHooks<W, A extends ActLike> {
 /**
  * The seed half: a document's opening state is pack-schema data — the pack
  * defined what a seed can declare, so only the pack can read one. `seed`
- * and `placements` arrive as the document's own JSON, opaque to the
- * generic side; the world and step that come back are how the story opens.
+ * and `placements` arrive as the document's own JSON, opaque to the generic
+ * side, which stores and serializes them without reading their shape and
+ * carries them across document-version bumps VERBATIM. A pack that evolves
+ * its own schema versions it inside its own JSON. The world and step that
+ * come back are how the story opens.
  */
 export interface SeedHooks<W, Step> {
+  /** A fresh document's seed — what `emptyDoc` writes. */
+  empty(): unknown;
+  /**
+   * Validate one document's seed JSON and return the value the rest of the
+   * pack will read. Throw an Error naming what is wrong: the document model
+   * surfaces the message as the file's parse failure.
+   */
+  parse(raw: unknown): unknown;
   /** Build the pre-story world the document's seed declares. */
   world(seed: unknown, placements: unknown): W;
-  /** The opening step: the seed drawn as scene only, no terminal lines. */
-  step(world: W, placements: unknown): Step;
+  /**
+   * The opening step: the seed drawn as scene only, no terminal lines — or
+   * null when the seed declares nothing, so the story has no opening frame.
+   * The pack decides what counts: a seed carrying only relations between
+   * entities the timeline creates later still opens one, because the
+   * relation renders the moment both ends exist.
+   */
+  step(world: W, placements: unknown): Step | null;
 }
 
 /**
  * Author-pinned geometry semantics. Placement data is document JSON with a
- * pack-defined schema and key grammar; the generic side only stores it and
- * hands it back through these hooks.
+ * pack-defined schema and key grammar; the generic side only stores it,
+ * migrates it verbatim, and hands it back through these hooks. A pack that
+ * pins geometry writes the whole value back with `setPlacements`.
  */
 export interface PlacementHooks<Step> {
+  /** A fresh document's placements — what `emptyDoc` writes. */
+  empty(): unknown;
+  /** Validate one document's placements JSON. See `SeedHooks.parse`. */
+  parse(raw: unknown): unknown;
   /** Stamp author-pinned slots onto a freshly built step's acts. */
   patchStep(step: Step, placements: unknown): void;
   /**

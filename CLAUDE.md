@@ -19,9 +19,10 @@ two private projects:
   other) editor would be a sibling package of the same shape; there is no
   umbrella package and the core never re-exports a framework.
 - `packages/boxes` → `@dumbshow/boxes`, private: the **boxes** reference
-  pack, the second consumer that keeps the contract honest (boxes pin
-  through `placements.repos`, so node drags and every marker hook are
-  exercised there too). Shared by the test suite and the harness apps.
+  pack, the second consumer that keeps the contract honest (it owns a seed of
+  `{ boxes, links }` and placements of `{ boxes }`, so document parsing, node
+  drags, and every marker hook are exercised there too). Shared by the test
+  suite and the harness apps.
 - `apps/harness-vue`: the Vue editor mounted with boxes (`mise run dev`).
 
 The production pack lives in its own host repo, which also carries the
@@ -69,11 +70,29 @@ parity casually.
   hook, extend `packages/boxes/src/index.ts` in the same change — the boxes
   pack implementing every hook is the honesty check.
 - **One document, no modes.** A document is `{ seed, timeline, placements }`
-  (`packages/core/src/editor/doc.ts`, versioned). The seed renders as scene only; placements
-  are authoring data, never timeline events; a still is a document whose
-  timeline never played. Format v1 deliberately carries a seed schema the
-  generic model defines — pack-owned seeds are a document-version bump owned
-  here (the boxes pack keeps seeds empty until then).
+  (`packages/core/src/editor/doc.ts`, versioned — **v2**). The seed renders as
+  scene only; placements are authoring data, never timeline events; a still is
+  a document whose timeline never played.
+- **The seed and the placements belong to the pack** (format v2). They are
+  pack-defined JSON: core stores, serializes, and migrates them without
+  reading their shape, and hands them to the pack through
+  `seed.empty/parse/world/step` and
+  `placements.empty/parse/patchStep/fromCompiled`. They cross document-version
+  bumps VERBATIM — a pack that evolves its own schema versions it inside its
+  own JSON. That is what made v1 → v2 a no-op for the data: v1's seed and
+  placements already held the writing pack's shape and nobody else's, so only
+  ownership moved. What follows from it: `emptyDoc(lang)` and
+  `parseDoc(json, lang)` take the pack (`DocSchema`, which any
+  `DiagramLanguage` satisfies structurally); a pack's parse error surfaces as
+  the document's own parse failure; core offers no key-level helper for
+  either half, only `setSeed` and `setPlacements`, which replace the whole
+  value (a pack that pins geometry computes the next value itself — the
+  freeze-before-rename merge is the pack's, not core's); and `seed.step()`
+  returning null is how a pack says its seed declares nothing, so the story
+  has no opening frame. A version bump must also carry the localStorage
+  draft: `loadDraft` reads the previous version's slot once, migrates it,
+  re-saves, and retires the old key — the slot is the author's only copy
+  between sessions.
 - **Everything derives.** `editor/derive.ts` (core) is the one road from document
   to playable steps; broken ops skip cleanly (`mapping` -1). Never build
   steps for the editor another way.
@@ -204,10 +223,12 @@ are linted and typechecked too.
 
 `tests/*.test.ts` is the workspace suite (vitest, node environment,
 `vitest.config.ts`): it imports `@dumbshow/core` and `@dumbshow/boxes` by
-name — the aliases resolve them to sources — and covers the document model,
-mutations, derive, the engine compiler, the transcript, the catalog, and
-the boxes pack's honesty (every optional hook implemented; every verb
-round-trips through its shell). Core behavior is tested through the
+name — the aliases resolve them to sources — and covers the document model
+(including v1 → v2 migration, proven verbatim against a stub pack whose
+parsers are the identity), draft storage across a format bump, mutations,
+derive, the engine compiler, the transcript, the catalog, and the boxes
+pack's honesty (every optional hook implemented; both document schemas
+parsed and rejected; every verb round-trips through its shell). Core behavior is tested through the
 reference pack on purpose; there are no per-package test directories yet.
 `tests/__snapshots__/boxes-board.golden.json` is a committed golden of a
 scripted board derived + compiled — byte-for-byte timing, mapping, and step

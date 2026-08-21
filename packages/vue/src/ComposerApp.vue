@@ -106,7 +106,7 @@ const isDark = defineModel<boolean | null>("isDark", { default: null });
  * playhead's step — they never jump it to the end.
  */
 
-const doc = shallowRef<ComposerDoc>(emptyDoc());
+const doc = shallowRef<ComposerDoc>(emptyDoc(props.lang));
 /* The live-drag preview: the document a node drag would commit if released
  * right now — derived and played exactly like the real one, never
  * persisted. Everything downstream reads `derived`, which prefers it. */
@@ -529,7 +529,7 @@ function save(): void {
 
 async function openFile(file: File): Promise<void> {
   try {
-    const next = await openDocFile(file);
+    const next = await openDocFile(file, props.lang);
     doc.value = next;
     selected.value = null;
     rebuild(-1);
@@ -688,7 +688,7 @@ function restoreCatalog(): void {
 
 onMounted(() => {
   document.documentElement.classList.add("dx-lock");
-  const draft = loadDraft(props.fileTag);
+  const draft = loadDraft(props.lang, props.fileTag);
   if (draft) {
     doc.value = draft;
     showNotice("Draft restored");

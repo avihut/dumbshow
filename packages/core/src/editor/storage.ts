@@ -11,12 +11,34 @@
  * keep separate drafts and hand out files in their own format's name.
  */
 
-import { type ComposerDoc, DOC_VERSION, parseDoc, serializeDoc } from "./doc";
+import {
+  type ComposerDoc,
+  DOC_VERSION,
+  type DocSchema,
+  parseDoc,
+  serializeDoc,
+} from "./doc";
 
 const DEFAULT_TAG = "dumbshow";
 
-const draftKey = (tag: string): string =>
-  `${tag}-composer-draft-v${DOC_VERSION}`;
+const draftKey = (tag: string, version: number = DOC_VERSION): string =>
+  `${tag}-composer-draft-v${version}`;
+
+function readKey(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function removeKey(key: string): void {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Nothing to do — see saveDraft.
+  }
+}
 
 export function saveDraft(doc: ComposerDoc, tag = DEFAULT_TAG): void {
   try {
@@ -26,28 +48,46 @@ export function saveDraft(doc: ComposerDoc, tag = DEFAULT_TAG): void {
   }
 }
 
-export function loadDraft(tag = DEFAULT_TAG): ComposerDoc | null {
-  let raw: string | null = null;
-  try {
-    raw = localStorage.getItem(draftKey(tag));
-  } catch {
-    return null;
+/**
+ * The draft for this format version, or the newest older one carried
+ * forward. The versioned key exists so a NEWER composer's draft stays
+ * invisible rather than being misread — but between sessions this slot is
+ * the author's only copy, so a bump must not orphan it: an older draft is
+ * migrated through `parseDoc`, re-saved under the current key, and its old
+ * slot retired. A draft this pack cannot read is discarded, same as a
+ * corrupt one.
+ */
+export function loadDraft(
+  lang: DocSchema,
+  tag = DEFAULT_TAG,
+): ComposerDoc | null {
+  const current = readKey(draftKey(tag));
+  if (current !== null) {
+    try {
+      return parseDoc(current, lang);
+    } catch {
+      clearDraft(tag);
+      return null;
+    }
   }
-  if (raw === null) return null;
-  try {
-    return parseDoc(raw);
-  } catch {
-    clearDraft(tag);
-    return null;
+  for (let version = DOC_VERSION - 1; version >= 1; version--) {
+    const key = draftKey(tag, version);
+    const older = readKey(key);
+    if (older === null) continue;
+    removeKey(key);
+    try {
+      const doc = parseDoc(older, lang);
+      saveDraft(doc, tag);
+      return doc;
+    } catch {
+      return null;
+    }
   }
+  return null;
 }
 
 export function clearDraft(tag = DEFAULT_TAG): void {
-  try {
-    localStorage.removeItem(draftKey(tag));
-  } catch {
-    // Nothing to do — see saveDraft.
-  }
+  removeKey(draftKey(tag));
 }
 
 /** The document's file-safe name — shared by every export. */
@@ -82,7 +122,10 @@ export function downloadDoc(doc: ComposerDoc, tag = DEFAULT_TAG): void {
 }
 
 /** Read and validate a picked file; rejects with a human-readable Error. */
-export async function openDocFile(file: File): Promise<ComposerDoc> {
+export async function openDocFile(
+  file: File,
+  lang: DocSchema,
+): Promise<ComposerDoc> {
   const text = await file.text();
-  return parseDoc(text);
+  return parseDoc(text, lang);
 }

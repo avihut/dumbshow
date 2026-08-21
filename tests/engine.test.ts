@@ -16,7 +16,7 @@ const op = (op: string, args: Record<string, unknown>): DocItem => ({
 
 /** A script with every beat flavour the engine schedules. */
 function script(): StepDef<Act>[] {
-  const doc = emptyDoc();
+  const doc = emptyDoc(BOXES_PACK);
   doc.timeline = [
     op("add", { name: "alpha" }), // cmd + act + out
     op("add", { name: "beta" }),
