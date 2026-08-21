@@ -250,6 +250,16 @@ authors are exempt) and `changeset` (a PR that touches `packages/core/`,
 the release bot's own PR, Dependabot, and the `skip-changeset` label). The master ruleset requires all
 six by job name: rename a job here and the ruleset in the same change.
 
+**Pull requests** follow `.claude/skills/open-pr/SKILL.md` — the repo's own
+skill, which overrides the generic one. Two rules beyond the obvious: the
+squash merge uses the PR title and body verbatim, so the body is written to be
+read in `git log`; and **a change with visual expression carries before/after
+images** — screenshots for a static change, a GIF when the point of the change
+is that it moves. The "before" is captured from a throwaway
+`daft start --fork <merge-base>` worktree (never in the `master` worktree, and
+removed straight after), and images are published on the orphan `assets`
+branch under `pr-<N>/`, which triggers no CI.
+
 **Releases** are changesets-driven (`.changeset/`, `release.yml`):
 
 1. Every user-facing change lands with a changeset (`pnpm changeset`; 0.x:
