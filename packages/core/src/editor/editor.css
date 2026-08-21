@@ -1,12 +1,74 @@
 /**
  * Composer styles — everything under the .dx- prefix.
  *
- * The composer is a full-window editor (docs/composer.md, layout: false):
- * ComposerApp stamps `dx-lock` on <html> while mounted so the document
- * never scrolls behind the app. All colors resolve through VitePress theme
- * tokens plus the daft brand tokens from custom.css, so both themes work
- * without any composer-specific theme handling.
+ * The composer is a full-window editor: ComposerApp stamps `dx-lock` on
+ * <html> while mounted so the document never scrolls behind the app.
+ *
+ * Every color, font, and tone resolves through the public `--dx-*` tokens
+ * declared below — the theming contract, and the only names a host needs to
+ * know. Their defaults sit behind `:where()`, which carries ZERO
+ * specificity, so a host that declares nothing still gets a coherent theme
+ * while a host that declares anything wins outright, whichever stylesheet
+ * loads first. Dark values key off a `dark` class on <html>; both blocks are
+ * specificity 0, so the dark one must stay AFTER the light one. The tokens
+ * land on <html> itself, where a pack's readPalette() reads them off
+ * document.documentElement.
+ *
+ * A host that overrides a token owns it in BOTH themes: its own declaration
+ * outranks the dark default too.
  */
+
+:where(html) {
+  /* Surfaces, edges, and text. */
+  --dx-bg: #ffffff;
+  --dx-bg-soft: #f6f6f7;
+  --dx-divider: #e2e2e3;
+  --dx-text-1: #3c3c43;
+  --dx-text-2: #67676c;
+  --dx-text-3: #929295;
+
+  --dx-font: ui-sans-serif, system-ui, sans-serif;
+  --dx-font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* The accent carries commands, the current row, and focus; warn carries
+     destructive verbs and anything the timeline could not run. */
+  --dx-accent: #bd8c26;
+  --dx-accent-text: #9a7115;
+  /* The ink that sits ON an accent fill — not to be confused with
+     --dx-accent-text, which is the accent used AS text on the page. A host
+     that overrides --dx-accent owns this too: what reads on gold does not
+     read on someone else's blue, and it can differ per theme. */
+  --dx-on-accent: #241b09;
+  --dx-warn: #c75c1e;
+  --dx-warn-text: #b14e14;
+
+  /* The tone pair for events and annotations. Only the `-text` forms differ
+     per theme — they are the AA-safe ones. */
+  --dx-teal: #1b9aaa;
+  --dx-teal-text: #0e7280;
+  --dx-purple: #8a63d2;
+  --dx-purple-text: #6d48c0;
+
+  /* Derived, and deliberately left an expression: a host that overrides only
+     the accent still gets a selection tint that matches it. */
+  --dx-sel: color-mix(in srgb, var(--dx-accent) 12%, var(--dx-bg));
+}
+
+/* Dark values for the tokens that have one. Keep after the block above. */
+:where(html.dark) {
+  --dx-bg: #1b1b1f;
+  --dx-bg-soft: #202127;
+  --dx-divider: #2e2e32;
+  --dx-text-1: #dfdfd6;
+  --dx-text-2: #98989f;
+  --dx-text-3: #6a6a71;
+  --dx-accent: #d1a54a;
+  --dx-accent-text: #e0b866;
+  --dx-warn: #d9752f;
+  --dx-warn-text: #e08a4a;
+  --dx-teal-text: #3fbccb;
+  --dx-purple-text: #ab8ce4;
+}
 
 html.dx-lock,
 html.dx-lock body {
@@ -15,31 +77,15 @@ html.dx-lock body {
 }
 
 .dx-app {
-  /* Composer-local aliases over the live theme tokens. */
-  --dx-line: var(--vp-c-divider);
-  --dx-panel: var(--vp-c-bg);
-  --dx-well: var(--vp-c-bg-soft);
-  --dx-sel: color-mix(in srgb, var(--daft-gold) 12%, var(--vp-c-bg));
-  --dx-teal: #1b9aaa;
-  --dx-purple: #8a63d2;
-  /* AA-safe text forms of the tone colors, per theme. */
-  --dx-teal-text: #0e7280;
-  --dx-purple-text: #6d48c0;
-
   position: fixed;
   inset: 0;
   z-index: 40;
   display: flex;
   flex-direction: column;
-  background: var(--dx-panel);
-  color: var(--vp-c-text-1);
-  font-family: var(--vp-font-family-base);
+  background: var(--dx-bg);
+  color: var(--dx-text-1);
+  font-family: var(--dx-font);
   font-size: 13px;
-}
-
-html.dark .dx-app {
-  --dx-teal-text: #3fbccb;
-  --dx-purple-text: #ab8ce4;
 }
 
 /* ------------------------------- toolbar -------------------------------- */
@@ -49,7 +95,7 @@ html.dark .dx-app {
   align-items: center;
   gap: 8px;
   padding: 8px 14px;
-  border-bottom: 1px solid var(--dx-line);
+  border-bottom: 1px solid var(--dx-divider);
   flex: none;
 }
 .dx-back {
@@ -58,14 +104,14 @@ html.dark .dx-app {
   gap: 6px;
   font-size: 12.5px;
   font-weight: 600;
-  color: var(--vp-c-text-2);
+  color: var(--dx-text-2);
   text-decoration: none;
   border-radius: 8px;
   padding: 5px 9px;
 }
 .dx-back:hover {
-  color: var(--vp-c-text-1);
-  background: var(--dx-well);
+  color: var(--dx-text-1);
+  background: var(--dx-bg-soft);
 }
 .dx-back svg {
   width: 13px;
@@ -81,7 +127,7 @@ html.dark .dx-app {
   font-family: inherit;
   font-size: 13.5px;
   font-weight: 650;
-  color: var(--vp-c-text-1);
+  color: var(--dx-text-1);
   background: none;
   border: 1px solid transparent;
   border-radius: 7px;
@@ -90,15 +136,15 @@ html.dark .dx-app {
   max-width: 320px;
 }
 .dx-title:hover {
-  border-color: var(--dx-line);
+  border-color: var(--dx-divider);
 }
 .dx-title:focus {
-  border-color: var(--daft-gold);
+  border-color: var(--dx-accent);
   outline: none;
 }
 .dx-filename {
   font-size: 11.5px;
-  color: var(--vp-c-text-3);
+  color: var(--dx-text-3);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -112,8 +158,8 @@ html.dark .dx-app {
   font-family: inherit;
   font-size: 12px;
   font-weight: 600;
-  color: var(--vp-c-text-2);
-  border: 1px solid var(--dx-line);
+  color: var(--dx-text-2);
+  border: 1px solid var(--dx-divider);
   background: none;
   border-radius: 8px;
   padding: 5px 11px;
@@ -121,17 +167,17 @@ html.dark .dx-app {
   white-space: nowrap;
 }
 .dx-chrome-btn:hover {
-  color: var(--vp-c-text-1);
-  border-color: var(--vp-c-text-3);
+  color: var(--dx-text-1);
+  border-color: var(--dx-text-3);
 }
 .dx-chrome-btn.primary {
-  background: var(--daft-gold);
-  border-color: var(--daft-gold);
-  color: #241b09;
+  background: var(--dx-accent);
+  border-color: var(--dx-accent);
+  color: var(--dx-on-accent);
 }
 .dx-chrome-btn.toggled {
-  color: var(--daft-gold-text);
-  border-color: color-mix(in srgb, var(--daft-gold) 50%, var(--dx-line));
+  color: var(--dx-accent-text);
+  border-color: color-mix(in srgb, var(--dx-accent) 50%, var(--dx-divider));
   background: var(--dx-sel);
 }
 .dx-chrome-btn svg {
@@ -145,15 +191,15 @@ html.dark .dx-app {
   justify-content: center;
   width: 28px;
   height: 28px;
-  border: 1px solid var(--dx-line);
+  border: 1px solid var(--dx-divider);
   background: none;
-  color: var(--vp-c-text-2);
+  color: var(--dx-text-2);
   border-radius: 8px;
   cursor: pointer;
 }
 .dx-icon-btn:hover {
-  color: var(--vp-c-text-1);
-  border-color: var(--vp-c-text-3);
+  color: var(--dx-text-1);
+  border-color: var(--dx-text-3);
 }
 .dx-icon-btn svg {
   width: 14px;
@@ -172,10 +218,10 @@ html.dark .dx-app {
   top: 34px;
   right: 0;
   z-index: 50;
-  border: 1px solid var(--dx-line);
+  border: 1px solid var(--dx-divider);
   border-radius: 10px;
   box-shadow: 0 6px 22px rgba(33, 29, 23, 0.16);
-  background: var(--dx-panel);
+  background: var(--dx-bg);
   min-width: 260px;
   padding: 6px;
 }
@@ -188,7 +234,7 @@ html.dark .dx-app {
   font-family: inherit;
   font-size: 12.5px;
   font-weight: 600;
-  color: var(--vp-c-text-1);
+  color: var(--dx-text-1);
   padding: 6px 9px;
   border-radius: 7px;
   cursor: pointer;
@@ -197,15 +243,15 @@ html.dark .dx-app {
   display: block;
   font-size: 10.5px;
   font-weight: 400;
-  color: var(--vp-c-text-3);
+  color: var(--dx-text-3);
 }
 .dx-export-pop > button:hover {
-  background: var(--dx-well);
+  background: var(--dx-bg-soft);
 }
 .dx-ex-note {
   font-size: 10px;
-  color: var(--vp-c-text-3);
-  border-top: 1px dashed var(--dx-line);
+  color: var(--dx-text-3);
+  border-top: 1px dashed var(--dx-divider);
   margin: 5px 3px 2px;
   padding: 6px 6px 2px;
 }
@@ -224,7 +270,7 @@ html.dark .dx-app {
 
 .dx-side {
   position: relative;
-  border-right: 1px solid var(--dx-line);
+  border-right: 1px solid var(--dx-divider);
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -236,10 +282,10 @@ html.dark .dx-app {
   flex-direction: column;
   min-height: 0;
   min-width: 0;
-  background: var(--dx-well);
+  background: var(--dx-bg-soft);
 }
 .dx-insp {
-  border-left: 1px solid var(--dx-line);
+  border-left: 1px solid var(--dx-divider);
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -251,13 +297,13 @@ html.dark .dx-app {
   font-size: 10.5px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--vp-c-text-3);
+  color: var(--dx-text-3);
   margin: 0;
   font-weight: 650;
 }
 
 .dx-empty {
-  color: var(--vp-c-text-3);
+  color: var(--dx-text-3);
   font-size: 12px;
   padding: 14px;
   margin: 0;
@@ -286,9 +332,9 @@ html.dark .dx-app {
   gap: 4px;
 }
 .dx-min {
-  border: 1px solid var(--dx-line);
+  border: 1px solid var(--dx-divider);
   background: none;
-  color: var(--vp-c-text-3);
+  color: var(--dx-text-3);
   width: 20px;
   height: 20px;
   border-radius: 6px;
@@ -304,8 +350,8 @@ html.dark .dx-app {
   height: 11px;
 }
 .dx-min:hover {
-  color: var(--vp-c-text-1);
-  border-color: var(--vp-c-text-3);
+  color: var(--dx-text-1);
+  border-color: var(--dx-text-3);
 }
 
 .dx-flap {
@@ -316,9 +362,9 @@ html.dark .dx-app {
   line-height: 1;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--daft-gold-text);
-  background: var(--dx-panel);
-  border: 1px solid color-mix(in srgb, var(--daft-gold) 40%, var(--dx-line));
+  color: var(--dx-accent-text);
+  background: var(--dx-bg);
+  border: 1px solid color-mix(in srgb, var(--dx-accent) 40%, var(--dx-divider));
   border-left: 0;
   border-radius: 0 7px 7px 0;
   padding: 9px 4px;
@@ -351,11 +397,11 @@ html.dark .dx-app {
   background:
     repeating-linear-gradient(
       to bottom,
-      var(--dx-line) 0 1px,
+      var(--dx-divider) 0 1px,
       transparent 1px 18px
     )
     left top / 5px 100%,
-    linear-gradient(var(--dx-line), var(--dx-line)) left top / 1px 100%;
+    linear-gradient(var(--dx-divider), var(--dx-divider)) left top / 1px 100%;
   background-repeat: no-repeat, no-repeat;
 }
 .dx-vrows {
@@ -369,12 +415,12 @@ html.dark .dx-app {
   align-items: center;
   gap: 4px;
   height: 26px;
-  border: 1px solid var(--dx-line);
-  background: var(--dx-panel);
+  border: 1px solid var(--dx-divider);
+  background: var(--dx-bg);
   border-radius: 7px;
-  font-family: var(--vp-font-family-mono);
+  font-family: var(--dx-font-mono);
   font-size: 10.5px;
-  color: var(--vp-c-text-2);
+  color: var(--dx-text-2);
   padding: 0 8px;
   white-space: nowrap;
   overflow: hidden;
@@ -382,7 +428,7 @@ html.dark .dx-app {
   flex: none;
 }
 .dx-vrow b {
-  color: var(--daft-gold-text);
+  color: var(--dx-accent-text);
   font-weight: 700;
 }
 .dx-vrest {
@@ -390,13 +436,13 @@ html.dark .dx-app {
   text-overflow: ellipsis;
 }
 .dx-vrow.sel {
-  border-color: var(--daft-gold);
-  box-shadow: 0 0 0 1px var(--daft-gold);
-  color: var(--vp-c-text-1);
+  border-color: var(--dx-accent);
+  box-shadow: 0 0 0 1px var(--dx-accent);
+  color: var(--dx-text-1);
   background: var(--dx-sel);
 }
 .dx-vrow.live:not(.sel) {
-  box-shadow: inset 2px 0 0 var(--daft-gold);
+  box-shadow: inset 2px 0 0 var(--dx-accent);
 }
 .dx-vrow.dead {
   opacity: 0.5;
@@ -408,23 +454,23 @@ html.dark .dx-app {
   font-size: 10px;
 }
 .dx-vrow.beat b {
-  color: var(--vp-c-text-3);
+  color: var(--dx-text-3);
   font-weight: 600;
 }
-/* Events are dashed rows — world happenings, not daft verbs. */
+/* Events are dashed rows — world happenings, not commands anyone typed. */
 .dx-vrow.event {
   border-style: dashed;
   background: none;
 }
 .dx-vrow.event b {
-  color: var(--vp-c-text-2);
+  color: var(--dx-text-2);
   font-weight: 650;
 }
 .dx-edot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--vp-c-text-3);
+  background: var(--dx-text-3);
   flex: none;
 }
 .dx-vrow.agent .dx-edot {
@@ -434,8 +480,8 @@ html.dark .dx-app {
   font-size: 9px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--daft-rust-text);
-  border: 1px solid color-mix(in srgb, var(--daft-rust) 40%, var(--dx-line));
+  color: var(--dx-warn-text);
+  border: 1px solid color-mix(in srgb, var(--dx-warn) 40%, var(--dx-divider));
   border-radius: 4px;
   padding: 0 4px;
   flex: none;
@@ -447,7 +493,7 @@ html.dark .dx-app {
   transform: translateY(-50%);
   display: none;
   gap: 1px;
-  background: var(--dx-panel);
+  background: var(--dx-bg);
   border-radius: 6px;
   padding: 1px;
 }
@@ -458,7 +504,7 @@ html.dark .dx-app {
 .dx-row-acts button {
   border: 0;
   background: none;
-  color: var(--vp-c-text-3);
+  color: var(--dx-text-3);
   width: 18px;
   height: 18px;
   border-radius: 5px;
@@ -469,8 +515,8 @@ html.dark .dx-app {
   padding: 0;
 }
 .dx-row-acts button:hover {
-  color: var(--vp-c-text-1);
-  background: var(--dx-well);
+  color: var(--dx-text-1);
+  background: var(--dx-bg-soft);
 }
 .dx-row-acts button:disabled {
   opacity: 0.3;
@@ -496,7 +542,7 @@ html.dark .dx-app {
   right: 8px;
   height: 0;
   z-index: 5;
-  border-top: 2px dashed var(--daft-gold);
+  border-top: 2px dashed var(--dx-accent);
   pointer-events: none;
 }
 .dx-drop-line::before,
@@ -507,7 +553,7 @@ html.dark .dx-app {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--daft-gold);
+  background: var(--dx-accent);
 }
 .dx-drop-line::before {
   left: -3px;
@@ -518,11 +564,11 @@ html.dark .dx-app {
 .dx-ghost {
   position: fixed;
   z-index: 60;
-  font-family: var(--vp-font-family-mono);
+  font-family: var(--dx-font-mono);
   font-size: 10.5px;
-  color: var(--vp-c-text-1);
-  background: var(--dx-panel);
-  border: 1px solid var(--daft-gold);
+  color: var(--dx-text-1);
+  background: var(--dx-bg);
+  border: 1px solid var(--dx-accent);
   border-radius: 6px;
   padding: 3px 9px;
   box-shadow: 0 4px 14px rgba(33, 29, 23, 0.18);
@@ -530,7 +576,7 @@ html.dark .dx-app {
   pointer-events: none;
 }
 .dx-ghost b {
-  color: var(--daft-gold-text);
+  color: var(--dx-accent-text);
   font-weight: 700;
 }
 
@@ -546,14 +592,14 @@ html.dark .dx-app {
   top: 5px;
   width: 11px;
   height: 2.5px;
-  background: var(--daft-gold);
+  background: var(--dx-accent);
   border: 0;
   border-radius: 1px;
   cursor: pointer;
   padding: 0;
 }
 .dx-chap.sel .dx-notch {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--daft-gold) 35%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dx-accent) 35%, transparent);
 }
 .dx-chap-name {
   position: absolute;
@@ -561,14 +607,14 @@ html.dark .dx-app {
   top: -3px;
   z-index: 6;
   transform: translate(-6px, 0);
-  font-family: var(--vp-font-family-mono);
+  font-family: var(--dx-font-mono);
   font-size: 9px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--daft-gold-text);
+  color: var(--dx-accent-text);
   white-space: nowrap;
-  background: var(--dx-panel);
-  border: 1px solid color-mix(in srgb, var(--daft-gold) 40%, var(--dx-line));
+  background: var(--dx-bg);
+  border: 1px solid color-mix(in srgb, var(--dx-accent) 40%, var(--dx-divider));
   border-radius: 5px;
   padding: 1px 7px;
   opacity: 0;
@@ -603,18 +649,18 @@ html.dark .dx-app {
   align-items: center;
   gap: 6px;
   padding: 10px 10px 8px;
-  border-top: 1px solid var(--dx-line);
+  border-top: 1px solid var(--dx-divider);
 }
 .dx-cat-search {
   flex: 1;
   display: flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid var(--dx-line);
+  border: 1px solid var(--dx-divider);
   border-radius: 7px;
   padding: 3px 8px;
-  color: var(--vp-c-text-3);
-  background: var(--dx-panel);
+  color: var(--dx-text-3);
+  background: var(--dx-bg);
 }
 .dx-cat-search svg {
   width: 11px;
@@ -624,7 +670,7 @@ html.dark .dx-app {
 .dx-cat-search input {
   border: 0;
   background: none;
-  color: var(--vp-c-text-1);
+  color: var(--dx-text-1);
   font-family: inherit;
   font-size: 11.5px;
   width: 100%;
@@ -656,7 +702,7 @@ html.dark .dx-app {
   font-size: 9.5px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--vp-c-text-3);
+  color: var(--dx-text-3);
   margin: 10px 2px 5px;
   font-weight: 650;
 }
@@ -669,11 +715,11 @@ html.dark .dx-app {
   gap: 4px;
 }
 .dx-chip {
-  font-family: var(--vp-font-family-mono);
+  font-family: var(--dx-font-mono);
   font-size: 10.5px;
-  color: var(--daft-gold-text);
-  background: var(--dx-panel);
-  border: 1px solid var(--dx-line);
+  color: var(--dx-accent-text);
+  background: var(--dx-bg);
+  border: 1px solid var(--dx-divider);
   border-radius: 6px;
   padding: 2px 8px;
   cursor: grab;
@@ -682,8 +728,8 @@ html.dark .dx-app {
   gap: 6px;
 }
 .dx-chip:hover:not(:disabled) {
-  border-color: var(--daft-gold);
-  color: var(--vp-c-text-1);
+  border-color: var(--dx-accent);
+  color: var(--dx-text-1);
   background: var(--dx-sel);
 }
 .dx-chip:disabled {
@@ -692,24 +738,24 @@ html.dark .dx-app {
 }
 .dx-chip.meta {
   border-style: dashed;
-  color: var(--vp-c-text-2);
+  color: var(--dx-text-2);
 }
 .dx-chip.ev {
   border-style: dashed;
-  color: var(--vp-c-text-2);
+  color: var(--dx-text-2);
   gap: 5px;
 }
 .dx-evdot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--vp-c-text-3);
+  background: var(--dx-text-3);
 }
 .dx-evdot.agent {
   background: var(--dx-purple);
 }
 .dx-chip.ent {
-  color: var(--vp-c-text-1);
+  color: var(--dx-text-1);
 }
 .dx-chip i {
   width: 8px;
@@ -718,11 +764,11 @@ html.dark .dx-app {
 }
 .dx-i-repo {
   border-radius: 50%;
-  background: var(--vp-c-text-1);
+  background: var(--dx-text-1);
 }
 .dx-i-wt {
   border-radius: 50%;
-  border: 1.6px solid var(--vp-c-text-1);
+  border: 1.6px solid var(--dx-text-1);
 }
 .dx-i-agent {
   border-radius: 2.5px;
@@ -735,9 +781,9 @@ html.dark .dx-app {
 }
 .dx-cat-hint {
   font-size: 10.5px;
-  color: var(--vp-c-text-3);
+  color: var(--dx-text-3);
   padding: 8px 12px 10px;
-  border-top: 1px dashed var(--dx-line);
+  border-top: 1px dashed var(--dx-divider);
   margin: 0;
 }
 
@@ -754,7 +800,7 @@ html.dark .dx-app {
 .dx-rtabs {
   display: flex;
   gap: 1px;
-  border-bottom: 1px solid var(--dx-line);
+  border-bottom: 1px solid var(--dx-divider);
   margin: 0 -12px 0;
   padding: 0 8px;
   flex: none;
@@ -764,7 +810,7 @@ html.dark .dx-app {
   font-size: 11.5px;
   font-weight: 600;
   line-height: 1;
-  color: var(--vp-c-text-3);
+  color: var(--dx-text-3);
   background: none;
   border: 0;
   border-bottom: 2px solid transparent;
@@ -772,8 +818,8 @@ html.dark .dx-app {
   cursor: pointer;
 }
 .dx-rtabs button.on {
-  color: var(--vp-c-text-1);
-  border-bottom-color: var(--daft-gold);
+  color: var(--dx-text-1);
+  border-bottom-color: var(--dx-accent);
 }
 .dx-rtabs button:disabled {
   cursor: default;
@@ -781,37 +827,37 @@ html.dark .dx-app {
 }
 .dx-split {
   border: 0;
-  border-top: 1px dashed var(--dx-line);
+  border-top: 1px dashed var(--dx-divider);
   margin: 10px -2px;
 }
 .dx-attrs h3 {
   font-size: 10.5px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--vp-c-text-3);
+  color: var(--dx-text-3);
   margin: 2px 2px 8px;
   font-weight: 650;
 }
 .dx-attrs-hint,
 .dx-attrs-note {
   font-size: 11px;
-  color: var(--vp-c-text-3);
+  color: var(--dx-text-3);
   margin: 6px 0 0;
 }
 .dx-kv {
   display: flex;
   justify-content: space-between;
-  color: var(--vp-c-text-2);
+  color: var(--dx-text-2);
   font-size: 12px;
   padding: 2px 0;
 }
 .dx-kv span:last-child {
-  color: var(--vp-c-text-3);
-  font-family: var(--vp-font-family-mono);
+  color: var(--dx-text-3);
+  font-family: var(--dx-font-mono);
   font-size: 11px;
 }
 
-/* State views: World rows, the daft registry, the Files tree. */
+/* State views: World rows, the registry, the Files tree. */
 .dx-view {
   padding: 8px 0 2px;
 }
@@ -819,7 +865,7 @@ html.dark .dx-app {
   font-size: 10.5px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--vp-c-text-3);
+  color: var(--dx-text-3);
   margin: 10px 2px 6px;
   font-weight: 650;
 }
@@ -837,7 +883,7 @@ html.dark .dx-app {
   border: 0;
   background: none;
   border-radius: 7px;
-  color: var(--vp-c-text-2);
+  color: var(--dx-text-2);
   font-family: inherit;
   font-size: 12.5px;
   text-align: left;
@@ -847,7 +893,7 @@ html.dark .dx-app {
 .dx-trow.repo,
 .dx-crow {
   font-weight: 650;
-  color: var(--vp-c-text-1);
+  color: var(--dx-text-1);
   margin-top: 4px;
 }
 .dx-trow.wt {
@@ -857,26 +903,26 @@ html.dark .dx-app {
 .dx-crow.sel,
 .dx-frow.sel {
   background: var(--dx-sel);
-  color: var(--vp-c-text-1);
+  color: var(--dx-text-1);
 }
 .dx-trow:hover,
 .dx-crow:hover,
 .dx-frow:hover {
-  background: var(--dx-well);
+  background: var(--dx-bg-soft);
 }
 .dx-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--vp-c-text-1);
+  background: var(--dx-text-1);
   flex: none;
 }
 .dx-dot.gold {
-  background: var(--daft-gold);
+  background: var(--dx-accent);
 }
 .dx-dot.hollow {
-  background: var(--dx-well);
-  border: 1.5px solid var(--vp-c-text-3);
+  background: var(--dx-bg-soft);
+  border: 1.5px solid var(--dx-text-3);
 }
 .dx-agent-chip {
   width: 12px;
@@ -889,10 +935,10 @@ html.dark .dx-app {
   flex: 1;
 }
 .dx-port {
-  font-family: var(--vp-font-family-mono);
+  font-family: var(--dx-font-mono);
   font-size: 10px;
-  color: var(--vp-c-text-3);
-  border: 1px solid var(--dx-line);
+  color: var(--dx-text-3);
+  border: 1px solid var(--dx-divider);
   border-radius: 5px;
   padding: 0 4px;
 }
@@ -906,17 +952,17 @@ html.dark .dx-app {
   border-radius: 7px;
   font: inherit;
   font-size: 12px;
-  color: var(--vp-c-text-2);
+  color: var(--dx-text-2);
   padding: 3px 7px;
   text-align: left;
   cursor: pointer;
 }
 .dx-rel-line.sel {
   background: var(--dx-sel);
-  color: var(--vp-c-text-1);
+  color: var(--dx-text-1);
 }
 .dx-rel-line:hover {
-  background: var(--dx-well);
+  background: var(--dx-bg-soft);
 }
 .dx-rel-dash {
   width: 16px;
@@ -925,16 +971,16 @@ html.dark .dx-app {
 }
 .dx-crow .dx-path {
   margin-left: auto;
-  font-family: var(--vp-font-family-mono);
+  font-family: var(--dx-font-mono);
   font-size: 10.5px;
-  color: var(--vp-c-text-3);
+  color: var(--dx-text-3);
   font-weight: 400;
 }
 .dx-ftree {
-  font-family: var(--vp-font-family-mono);
+  font-family: var(--dx-font-mono);
   font-size: 11.5px;
   line-height: 1.7;
-  color: var(--vp-c-text-2);
+  color: var(--dx-text-2);
   display: flex;
   flex-direction: column;
 }
@@ -950,16 +996,16 @@ html.dark .dx-app {
   cursor: pointer;
 }
 .dx-frow.dir {
-  color: var(--vp-c-text-1);
+  color: var(--dx-text-1);
   font-weight: 600;
 }
 .dx-frow.cwd {
-  box-shadow: inset 2px 0 0 var(--daft-gold);
+  box-shadow: inset 2px 0 0 var(--dx-accent);
 }
 .dx-attrs-skip {
   font-size: 11px;
-  color: var(--daft-rust-text);
-  border: 1px dashed color-mix(in srgb, var(--daft-rust) 40%, var(--dx-line));
+  color: var(--dx-warn-text);
+  border: 1px dashed color-mix(in srgb, var(--dx-warn) 40%, var(--dx-divider));
   border-radius: 7px;
   padding: 6px 8px;
   margin: 0 0 9px;
@@ -974,10 +1020,10 @@ html.dark .dx-app {
   font-size: 13px;
 }
 .dx-tag {
-  font-family: var(--vp-font-family-mono);
+  font-family: var(--dx-font-mono);
   font-size: 10px;
-  color: var(--daft-gold-text);
-  border: 1px solid color-mix(in srgb, var(--daft-gold) 45%, var(--dx-line));
+  color: var(--dx-accent-text);
+  border: 1px solid color-mix(in srgb, var(--dx-accent) 45%, var(--dx-divider));
   background: var(--dx-sel);
   border-radius: 5px;
   padding: 1px 6px;
@@ -990,14 +1036,14 @@ html.dark .dx-app {
 .dx-mini button {
   border: 0;
   background: none;
-  color: var(--vp-c-text-3);
+  color: var(--dx-text-3);
   padding: 2px 4px;
   border-radius: 5px;
   cursor: pointer;
 }
 .dx-mini button:hover {
-  color: var(--vp-c-text-1);
-  background: var(--dx-well);
+  color: var(--dx-text-1);
+  background: var(--dx-bg-soft);
 }
 .dx-mini svg {
   width: 13px;
@@ -1006,9 +1052,9 @@ html.dark .dx-app {
 }
 .dx-syntax {
   display: block;
-  font-family: var(--vp-font-family-mono);
+  font-family: var(--dx-font-mono);
   font-size: 10.5px;
-  color: var(--vp-c-text-3);
+  color: var(--dx-text-3);
   margin: 0 0 9px;
 }
 .dx-field {
@@ -1019,21 +1065,21 @@ html.dark .dx-app {
 }
 .dx-field label {
   font-size: 11px;
-  color: var(--vp-c-text-3);
+  color: var(--dx-text-3);
 }
 .dx-field input,
 .dx-field select {
-  font-family: var(--vp-font-family-mono);
+  font-family: var(--dx-font-mono);
   font-size: 12px;
-  color: var(--vp-c-text-1);
-  border: 1px solid var(--dx-line);
-  background: var(--dx-panel);
+  color: var(--dx-text-1);
+  border: 1px solid var(--dx-divider);
+  background: var(--dx-bg);
   border-radius: 7px;
   padding: 4px 8px;
 }
 .dx-field input:focus,
 .dx-field select:focus {
-  border-color: var(--daft-gold);
+  border-color: var(--dx-accent);
   outline: none;
 }
 .dx-swrow {
@@ -1043,15 +1089,15 @@ html.dark .dx-app {
   padding: 4px 0;
 }
 .dx-swrow > span {
-  color: var(--vp-c-text-2);
+  color: var(--dx-text-2);
   font-size: 12.5px;
 }
 .dx-sw {
   width: 30px;
   height: 17px;
   border-radius: 999px;
-  border: 1px solid var(--dx-line);
-  background: var(--dx-well);
+  border: 1px solid var(--dx-divider);
+  background: var(--dx-bg-soft);
   position: relative;
   flex: none;
   cursor: pointer;
@@ -1064,15 +1110,15 @@ html.dark .dx-app {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: var(--vp-c-text-3);
+  background: var(--dx-text-3);
 }
 .dx-sw.on {
   background: var(--dx-sel);
-  border-color: color-mix(in srgb, var(--daft-gold) 50%, var(--dx-line));
+  border-color: color-mix(in srgb, var(--dx-accent) 50%, var(--dx-divider));
 }
 .dx-sw.on i {
   left: 14px;
-  background: var(--daft-gold);
+  background: var(--dx-accent);
 }
 @media (prefers-reduced-motion: no-preference) {
   .dx-sw i {
@@ -1090,9 +1136,9 @@ html.dark .dx-app {
   right: 14px;
   z-index: 30;
   font-size: 12px;
-  color: var(--vp-c-text-1);
-  background: var(--dx-panel);
-  border: 1px solid color-mix(in srgb, var(--daft-gold) 45%, var(--dx-line));
+  color: var(--dx-text-1);
+  background: var(--dx-bg);
+  border: 1px solid color-mix(in srgb, var(--dx-accent) 45%, var(--dx-divider));
   border-radius: 8px;
   padding: 6px 11px;
   box-shadow: 0 4px 14px rgba(33, 29, 23, 0.14);
@@ -1145,10 +1191,10 @@ html.dark .dx-app {
 
 .dx-term {
   position: relative;
-  border-top: 1px solid var(--dx-line);
-  background: var(--dx-panel);
+  border-top: 1px solid var(--dx-divider);
+  background: var(--dx-bg);
   padding: 9px 34px 10px 14px;
-  font-family: var(--vp-font-family-mono);
+  font-family: var(--dx-font-mono);
   font-size: 11.5px;
   line-height: 1.75;
   height: 148px;
@@ -1173,9 +1219,9 @@ html.dark .dx-app {
   line-height: 1;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--daft-gold-text);
-  background: var(--dx-panel);
-  border: 1px solid color-mix(in srgb, var(--daft-gold) 40%, var(--dx-line));
+  color: var(--dx-accent-text);
+  background: var(--dx-bg);
+  border: 1px solid color-mix(in srgb, var(--dx-accent) 40%, var(--dx-divider));
   border-bottom: 0;
   border-radius: 7px 7px 0 0;
   padding: 5px 10px;
@@ -1184,13 +1230,13 @@ html.dark .dx-app {
 .dx-tline {
   white-space: pre-wrap;
   word-break: break-word;
-  color: var(--vp-c-text-2);
+  color: var(--dx-text-2);
   border-radius: 5px;
   padding: 0 4px;
 }
 .dx-tline.is-cmd {
   cursor: pointer;
-  color: var(--vp-c-text-1);
+  color: var(--dx-text-1);
 }
 .dx-tline.is-cmd:hover {
   background: var(--dx-sel);
@@ -1199,26 +1245,26 @@ html.dark .dx-app {
   color: var(--dx-teal-text);
 }
 .dx-tline.is-dim {
-  color: var(--vp-c-text-3);
+  color: var(--dx-text-3);
 }
 .dx-tline.is-agent {
   color: var(--dx-purple-text);
 }
 .dx-tline.is-rust {
-  color: var(--daft-rust-text);
+  color: var(--dx-warn-text);
 }
 .dx-prompt {
-  color: var(--vp-c-text-3);
+  color: var(--dx-text-3);
 }
 .dx-verb {
-  color: var(--daft-gold-text);
+  color: var(--dx-accent-text);
   font-weight: 700;
 }
 .dx-caret {
   display: inline-block;
   width: 7px;
   height: 13px;
-  background: var(--daft-gold);
+  background: var(--dx-accent);
   vertical-align: -2px;
 }
 @media (prefers-reduced-motion: no-preference) {
@@ -1232,8 +1278,8 @@ html.dark .dx-app {
   }
 }
 .dx-term-hint {
-  color: var(--vp-c-text-3);
-  font-family: var(--vp-font-family-base);
+  color: var(--dx-text-3);
+  font-family: var(--dx-font);
   font-size: 11.5px;
   margin: 2px 0 0;
 }
@@ -1243,7 +1289,7 @@ html.dark .dx-app {
 .dx-eye {
   border: 0;
   background: none;
-  color: var(--vp-c-text-3);
+  color: var(--dx-text-3);
   padding: 0 2px;
   margin-left: 8px;
   cursor: pointer;
@@ -1260,7 +1306,7 @@ html.dark .dx-app {
   visibility: visible;
 }
 .dx-eye:hover {
-  color: var(--vp-c-text-1);
+  color: var(--dx-text-1);
 }
 .dx-shell-input {
   display: flex;
@@ -1272,10 +1318,10 @@ html.dark .dx-app {
   border: 0;
   background: none;
   outline: none;
-  color: var(--vp-c-text-1);
+  color: var(--dx-text-1);
   font: inherit;
   padding: 0;
-  caret-color: var(--daft-gold);
+  caret-color: var(--dx-accent);
 }
 
 /* ------------------------------- player bar ------------------------------ */
@@ -1284,8 +1330,8 @@ html.dark .dx-app {
   display: flex;
   align-items: center;
   gap: 4px;
-  border-top: 1px solid var(--dx-line);
-  background: var(--dx-panel);
+  border-top: 1px solid var(--dx-divider);
+  background: var(--dx-bg);
   padding: 8px 12px;
   flex: none;
 }
@@ -1297,14 +1343,14 @@ html.dark .dx-app {
   height: 28px;
   border: 1px solid transparent;
   background: none;
-  color: var(--vp-c-text-1);
+  color: var(--dx-text-1);
   border-radius: 8px;
   cursor: pointer;
   flex: none;
   padding: 0;
 }
 .dx-tbtn:hover:not(:disabled) {
-  background: var(--dx-well);
+  background: var(--dx-bg-soft);
 }
 .dx-tbtn:disabled {
   opacity: 0.35;
@@ -1313,12 +1359,12 @@ html.dark .dx-app {
 .dx-tbtn.big {
   width: 34px;
   height: 34px;
-  border: 1px solid var(--dx-line);
-  background: var(--dx-panel);
+  border: 1px solid var(--dx-divider);
+  background: var(--dx-bg);
 }
 .dx-tbtn.toggled {
-  color: var(--daft-gold-text);
-  border-color: color-mix(in srgb, var(--daft-gold) 50%, var(--dx-line));
+  color: var(--dx-accent-text);
+  border-color: color-mix(in srgb, var(--dx-accent) 50%, var(--dx-divider));
   background: var(--dx-sel);
 }
 .dx-tbtn svg {
@@ -1331,15 +1377,15 @@ html.dark .dx-app {
   height: 17px;
 }
 .dx-ttime {
-  font-family: var(--vp-font-family-mono);
+  font-family: var(--dx-font-mono);
   font-size: 11px;
-  color: var(--vp-c-text-2);
+  color: var(--dx-text-2);
   font-variant-numeric: tabular-nums;
   margin: 0 8px 0 6px;
   white-space: nowrap;
 }
 .dx-ttime span {
-  color: var(--vp-c-text-3);
+  color: var(--dx-text-3);
 }
 .dx-scrub {
   position: relative;
@@ -1355,7 +1401,7 @@ html.dark .dx-app {
   right: 0;
   top: 11px;
   height: 3px;
-  background: var(--dx-line);
+  background: var(--dx-divider);
   border-radius: 2px;
 }
 .dx-sfill {
@@ -1363,7 +1409,7 @@ html.dark .dx-app {
   left: 0;
   top: 11px;
   height: 3px;
-  background: var(--daft-gold);
+  background: var(--dx-accent);
   border-radius: 2px;
   opacity: 0.45;
 }
@@ -1372,7 +1418,7 @@ html.dark .dx-app {
   top: 7px;
   width: 2px;
   height: 11px;
-  background: var(--daft-gold);
+  background: var(--dx-accent);
   border: 0;
   border-radius: 1px;
   z-index: 2;
@@ -1386,7 +1432,7 @@ html.dark .dx-app {
   width: 12px;
   height: 12px;
   border-radius: 3.5px;
-  background: var(--daft-gold);
+  background: var(--dx-accent);
   transform: rotate(45deg);
   box-shadow: 0 1px 3px rgba(33, 29, 23, 0.3);
   z-index: 3;
@@ -1404,11 +1450,11 @@ html.dark .dx-app {
   pointer-events: auto;
 }
 .dx-speed {
-  font-family: var(--vp-font-family-mono);
+  font-family: var(--dx-font-mono);
   font-size: 11px;
-  color: var(--vp-c-text-2);
-  border: 1px solid var(--dx-line);
-  background: var(--dx-panel);
+  color: var(--dx-text-2);
+  border: 1px solid var(--dx-divider);
+  background: var(--dx-bg);
   border-radius: 7px;
   padding: 3px 6px;
   margin-left: 6px;
@@ -1417,7 +1463,7 @@ html.dark .dx-app {
 /* --------------------------------- focus --------------------------------- */
 
 .dx-app :is(button, a, input, [tabindex="0"]):focus-visible {
-  outline: 2px solid var(--daft-gold);
+  outline: 2px solid var(--dx-accent);
   outline-offset: 2px;
 }
 

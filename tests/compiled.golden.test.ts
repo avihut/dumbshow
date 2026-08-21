@@ -6,12 +6,12 @@
  * `pnpm vitest run -u` and review the diff like a contract change.
  */
 
-import { BOXES_PACK } from "@dumbshow/boxes";
+import { BOXES_PACK, type Placements } from "@dumbshow/boxes";
 import { type ComposerDoc, derive, emptyDoc } from "@dumbshow/core";
 import { expect, it } from "vitest";
 
 function scripted(): ComposerDoc {
-  const doc = emptyDoc();
+  const doc = emptyDoc(BOXES_PACK);
   doc.title = "Golden board";
   doc.timeline = [
     { kind: "chapter", title: "Board" },
@@ -26,7 +26,7 @@ function scripted(): ComposerDoc {
     { kind: "op", op: "link", args: { a: "alpha", b: "beta" } }, // alpha is gone: skipped
     { kind: "chapter", title: "Never opens" },
   ];
-  doc.placements.repos.beta = { x: 240, y: -60 };
+  doc.placements = { boxes: { beta: { x: 240, y: -60 } } } satisfies Placements;
   return doc;
 }
 

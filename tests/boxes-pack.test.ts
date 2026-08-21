@@ -38,6 +38,43 @@ describe("the boxes pack implements the whole contract", () => {
     expect(BOXES_PACK.shellVerb?.("ls")).toBe("");
   });
 
+  it("owns both halves of the document's pack JSON", () => {
+    for (const hook of [
+      BOXES_PACK.seed.empty,
+      BOXES_PACK.seed.parse,
+      BOXES_PACK.seed.world,
+      BOXES_PACK.seed.step,
+      BOXES_PACK.placements.empty,
+      BOXES_PACK.placements.parse,
+      BOXES_PACK.placements.patchStep,
+      BOXES_PACK.placements.fromCompiled,
+    ])
+      expect(typeof hook).toBe("function");
+  });
+
+  it("round-trips its own blanks through its own parsers", () => {
+    const { seed, placements } = BOXES_PACK;
+    expect(seed.parse(seed.empty())).toEqual(seed.empty());
+    expect(placements.parse(placements.empty())).toEqual(placements.empty());
+  });
+
+  it("refuses JSON that is not its schema, saying what is wrong", () => {
+    const { seed, placements } = BOXES_PACK;
+    expect(() => seed.parse({ boxes: [{}], links: [] })).toThrow(/no name/);
+    expect(() => seed.parse({ boxes: [], links: [["a"]] })).toThrow(/pair/);
+    // The shape format v1 carried is another pack's, and reads as malformed.
+    expect(() => seed.parse({ repos: [], rels: [] })).toThrow(/not a list/);
+    expect(() => placements.parse({ boxes: { a: { x: 1 } } })).toThrow(
+      /malformed/,
+    );
+  });
+
+  it("opens no scene from a seed that declares nothing", () => {
+    const { seed, placements } = BOXES_PACK;
+    const blank = placements.empty();
+    expect(seed.step(seed.world(seed.empty(), blank), blank)).toBeNull();
+  });
+
   it("registers verbs and one event", () => {
     expect(BOXES_PACK.ops.map((o) => [o.id, o.kind])).toEqual([
       ["add", "verb"],

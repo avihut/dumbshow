@@ -1,4 +1,4 @@
-import { BOXES_PACK } from "@dumbshow/boxes";
+import { BOXES_PACK, type Placements, type Seed } from "@dumbshow/boxes";
 import {
   type ComposerDoc,
   type DocItem,
@@ -9,7 +9,7 @@ import {
 import { describe, expect, it } from "vitest";
 
 function docOf(...items: DocItem[]): ComposerDoc {
-  const doc = emptyDoc();
+  const doc = emptyDoc(BOXES_PACK);
   doc.timeline = items;
   return doc;
 }
@@ -22,7 +22,7 @@ const op = (op: string, args: Record<string, unknown> = {}): DocItem => ({
 
 describe("derive", () => {
   it("derives nothing from an empty document", () => {
-    const d = derive(emptyDoc(), BOXES_PACK);
+    const d = derive(emptyDoc(BOXES_PACK), BOXES_PACK);
     expect(d.steps).toEqual([]);
     expect(d.seedStep).toBe(false);
     expect(d.mapping).toEqual([]);
@@ -96,21 +96,50 @@ describe("derive", () => {
 
   it("opens with a seed step only when the seed declares something", () => {
     const doc = docOf(op("add", { name: "alpha" }));
-    doc.seed.rels = [["a", "b"]];
+    // A link whose ends the timeline has yet to create still opens a scene:
+    // whether a seed declares anything is the pack's judgement, not ours.
+    doc.seed = { boxes: [], links: [["a", "b"]] } satisfies Seed;
     const d = derive(doc, BOXES_PACK);
     expect(d.seedStep).toBe(true);
     expect(d.steps[0].title).toBe("Scene");
     expect(d.mapping).toEqual([1]);
   });
 
+  it("draws the seed's own boxes into the opening step", () => {
+    const doc = docOf();
+    doc.seed = {
+      boxes: [{ name: "alpha", x: 10, y: 20 }],
+      links: [],
+    } satisfies Seed;
+    const d = derive(doc, BOXES_PACK);
+    expect(d.seedStep).toBe(true);
+    expect(d.steps[0].silent).toBe(true);
+    expect(d.steps[0].beats[0]).toEqual({
+      act: { kind: "box", name: "alpha", x: 10, y: 20 },
+    });
+    expect(d.compiled.term).toEqual([]); // scene only: no terminal lines
+  });
+
   it("feeds author pins into the world through placements", () => {
     const doc = docOf(op("add", { name: "alpha" }));
-    doc.placements.repos.alpha = { x: 123, y: -45 };
+    doc.placements = {
+      boxes: { alpha: { x: 123, y: -45 } },
+    } satisfies Placements;
     const d = derive(doc, BOXES_PACK);
     expect(d.world.boxes[0]).toEqual({ name: "alpha", x: 123, y: -45 });
     expect(BOXES_PACK.placements.fromCompiled(d.compiled)).toEqual({
-      repos: { alpha: { x: 123, y: -45 } },
-      wts: {},
+      boxes: { alpha: { x: 123, y: -45 } },
+    });
+  });
+
+  it("lets a pin beat the seed's own spot", () => {
+    const doc = docOf();
+    doc.seed = { boxes: [{ name: "alpha", x: 1, y: 2 }], links: [] };
+    doc.placements = { boxes: { alpha: { x: 70, y: 80 } } };
+    expect(derive(doc, BOXES_PACK).world.boxes[0]).toEqual({
+      name: "alpha",
+      x: 70,
+      y: 80,
     });
   });
 });
@@ -122,7 +151,7 @@ describe("withCamsOf", () => {
       op("add", { name: "alpha" }),
       op("add", { name: "beta" }),
     );
-    moved.placements.repos.alpha = { x: 900, y: 900 };
+    moved.placements = { boxes: { alpha: { x: 900, y: 900 } } };
     const steps = derive(moved, BOXES_PACK).steps;
 
     const out = withCamsOf(steps, base);

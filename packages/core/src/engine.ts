@@ -10,7 +10,7 @@
  * The engine is generic over a language's acts (./language.ts): it schedules
  * them and carries them through compiled events, but never reads anything
  * beyond `kind`. What acts mean — scene state, drawing, viewer attachment —
- * lives on the pack side (./render.ts for daft, assembled in ./pack.ts).
+ * lives on the pack side, behind the scene hooks the contract declares.
  */
 
 import type { ActLike } from "./language";
@@ -25,7 +25,8 @@ export interface CamRect {
 /**
  * Output-line tones mirror the diagram's color law: `ok` teal = setup and
  * checks, `agent` purple = AI agents, `rust` = destructive operations,
- * `dim` = commentary. Commands render their `daft` verb in gold.
+ * `dim` = commentary. Commands render their leading verb in the accent
+ * color — the pack names it through `shellVerb`.
  */
 export type TermTone = "ok" | "dim" | "agent" | "rust";
 

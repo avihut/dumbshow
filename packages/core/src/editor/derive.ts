@@ -53,10 +53,10 @@ export function derive<W, A extends ActLike, S>(
 ): Derived<W, A> {
   const world = lang.seed.world(doc.seed, doc.placements);
   const steps: StepDef<A>[] = [];
-  // Relations alone still need the opening scene — a rel between
-  // timeline-born repos renders once both exist.
-  const hasSeed = doc.seed.repos.length > 0 || doc.seed.rels.length > 0;
-  if (hasSeed) steps.push(lang.seed.step(world, doc.placements));
+  // Whether a seed opens the story is the pack's call — it owns the schema,
+  // so only it can say whether one declares anything. Null = nothing opens.
+  const opening = lang.seed.step(world, doc.placements);
+  if (opening) steps.push(opening);
 
   const worlds: W[] = [];
   const mapping: number[] = [];
@@ -103,7 +103,7 @@ export function derive<W, A extends ActLike, S>(
     world,
     worlds,
     steps,
-    seedStep: hasSeed,
+    seedStep: opening !== null,
     mapping,
     chapters,
     compiled: compile(steps),

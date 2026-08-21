@@ -1,19 +1,19 @@
 /**
  * The language-pack seam — the contract between the generic diagram
- * machinery (engine clock, editor, exports: the future dumbshow package)
- * and a concrete diagram language (daft's pack, assembled in pack.ts).
+ * machinery (engine clock, editor, exports) and a concrete diagram
+ * language, assembled by whichever pack a host loads.
  *
  * The generic side owns documents, time, pointers, and pixels-as-plumbing:
  * compile/player, the editor chrome, drag mechanics, offline frame
  * stepping, persistence. A language owns MEANING: what entities exist
  * (the world), what can be said about them (ops), what happenings look
  * like (acts + scene + drawing), and how its shell spells things. This
- * file declares the shapes a pack provides; nothing here may name a daft
+ * file declares the shapes a pack provides; nothing here may name a pack
  * concept — the seam rule in CLAUDE.md keeps it that way.
  *
  * The contract grows only as the generic side consumes it (engine first,
  * then render scaffolding, then the editor); the reference pack in the
- * dumbshow harness is the honesty check that nothing daft-shaped leaks in.
+ * dumbshow harness is the honesty check that nothing pack-shaped leaks in.
  */
 
 /** An act: one timed happening in a scene. The generic side never reads
@@ -139,22 +139,44 @@ export interface EntityHooks<W, A extends ActLike> {
 /**
  * The seed half: a document's opening state is pack-schema data — the pack
  * defined what a seed can declare, so only the pack can read one. `seed`
- * and `placements` arrive as the document's own JSON, opaque to the
- * generic side; the world and step that come back are how the story opens.
+ * and `placements` arrive as the document's own JSON, opaque to the generic
+ * side, which stores and serializes them without reading their shape and
+ * carries them across document-version bumps VERBATIM. A pack that evolves
+ * its own schema versions it inside its own JSON. The world and step that
+ * come back are how the story opens.
  */
 export interface SeedHooks<W, Step> {
+  /** A fresh document's seed — what `emptyDoc` writes. */
+  empty(): unknown;
+  /**
+   * Validate one document's seed JSON and return the value the rest of the
+   * pack will read. Throw an Error naming what is wrong: the document model
+   * surfaces the message as the file's parse failure.
+   */
+  parse(raw: unknown): unknown;
   /** Build the pre-story world the document's seed declares. */
   world(seed: unknown, placements: unknown): W;
-  /** The opening step: the seed drawn as scene only, no terminal lines. */
-  step(world: W, placements: unknown): Step;
+  /**
+   * The opening step: the seed drawn as scene only, no terminal lines — or
+   * null when the seed declares nothing, so the story has no opening frame.
+   * The pack decides what counts: a seed carrying only relations between
+   * entities the timeline creates later still opens one, because the
+   * relation renders the moment both ends exist.
+   */
+  step(world: W, placements: unknown): Step | null;
 }
 
 /**
  * Author-pinned geometry semantics. Placement data is document JSON with a
- * pack-defined schema and key grammar; the generic side only stores it and
- * hands it back through these hooks.
+ * pack-defined schema and key grammar; the generic side only stores it,
+ * migrates it verbatim, and hands it back through these hooks. A pack that
+ * pins geometry writes the whole value back with `setPlacements`.
  */
 export interface PlacementHooks<Step> {
+  /** A fresh document's placements — what `emptyDoc` writes. */
+  empty(): unknown;
+  /** Validate one document's placements JSON. See `SeedHooks.parse`. */
+  parse(raw: unknown): unknown;
   /** Stamp author-pinned slots onto a freshly built step's acts. */
   patchStep(step: Step, placements: unknown): void;
   /**

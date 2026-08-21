@@ -1,7 +1,7 @@
+import { BOXES_PACK, type Placements } from "@dumbshow/boxes";
 import {
   type ComposerDoc,
   emptyDoc,
-  freezePlacements,
   insertItem,
   moveItem,
   removeItem,
@@ -9,15 +9,15 @@ import {
   setArgs,
   setBeatSecs,
   setChapterTitle,
-  setRepoPlacement,
+  setPlacements,
+  setSeed,
   setSilent,
   setTitle,
-  setWtPlacement,
 } from "@dumbshow/core";
 import { describe, expect, it } from "vitest";
 
 function sample(): ComposerDoc {
-  const doc = emptyDoc();
+  const doc = emptyDoc(BOXES_PACK);
   doc.timeline = [
     { kind: "op", op: "add", args: { name: "alpha" } },
     { kind: "chapter", title: "Two" },
@@ -41,9 +41,8 @@ describe("mutations are pure", () => {
     setChapterTitle(doc, 1, "Renamed");
     setBeatSecs(doc, 2, 5);
     setTitle(doc, "New");
-    setRepoPlacement(doc, "alpha", { x: 1, y: 2 });
-    setWtPlacement(doc, "alpha:main", { ang: 1, dist: 2 });
-    freezePlacements(doc, { repos: { alpha: { x: 9, y: 9 } }, wts: {} });
+    setSeed(doc, { boxes: [{ name: "alpha" }], links: [] });
+    setPlacements(doc, { boxes: { alpha: { x: 1, y: 2 } } });
     expect(doc).toEqual(before);
   });
 
@@ -117,29 +116,42 @@ describe("timeline mutations", () => {
   });
 });
 
-describe("placements", () => {
-  it("pin and unpin repos and worktrees", () => {
-    let doc = setRepoPlacement(sample(), "alpha", { x: 1.5, y: -2 });
-    doc = setWtPlacement(doc, "alpha:main", { ang: 0.5, dist: 120 });
-    expect(doc.placements).toEqual({
-      repos: { alpha: { x: 1.5, y: -2 } },
-      wts: { "alpha:main": { ang: 0.5, dist: 120 } },
-    });
-    doc = setRepoPlacement(doc, "alpha", null);
-    doc = setWtPlacement(doc, "alpha:main", null);
-    expect(doc.placements).toEqual({ repos: {}, wts: {} });
+describe("the pack-owned halves", () => {
+  it("replace the seed and the placements wholesale", () => {
+    const seed = { boxes: [{ name: "alpha", x: 4, y: 5 }], links: [] };
+    const pins: Placements = { boxes: { alpha: { x: 1.5, y: -2 } } };
+    const doc = setPlacements(setSeed(sample(), seed), pins);
+    expect(doc.seed).toEqual(seed);
+    expect(doc.placements).toEqual(pins);
+    expect(doc.timeline).toEqual(sample().timeline);
   });
 
-  it("freeze derived geometry without overriding author pins", () => {
-    const doc = setRepoPlacement(sample(), "alpha", { x: 1, y: 1 });
-    const frozen = freezePlacements(doc, {
-      repos: { alpha: { x: 9, y: 9 }, beta: { x: 5, y: 5 } },
-      wts: { "beta:main": { ang: 1, dist: 2 } },
-    });
-    expect(frozen.placements.repos).toEqual({
+  it("never alias the value the caller handed in", () => {
+    const pins: Placements = { boxes: { alpha: { x: 1, y: 1 } } };
+    const doc = setPlacements(sample(), pins);
+    pins.boxes.alpha.x = 99;
+    expect((doc.placements as Placements).boxes.alpha.x).toBe(1);
+  });
+
+  /*
+   * The merge rule that used to live here as `freezePlacements` is now the
+   * pack's: core cannot read a key of JSON whose schema it does not know.
+   * A pack pins currently-derived geometry by spreading its own value —
+   * author pins last, so they win — and writing the whole thing back.
+   */
+  it("let a pack freeze derived geometry with author pins winning", () => {
+    const doc = setPlacements(sample(), {
+      boxes: { alpha: { x: 1, y: 1 } },
+    } satisfies Placements);
+    const derived: Placements = {
+      boxes: { alpha: { x: 9, y: 9 }, beta: { x: 5, y: 5 } },
+    };
+    const frozen = setPlacements(doc, {
+      boxes: { ...derived.boxes, ...(doc.placements as Placements).boxes },
+    } satisfies Placements);
+    expect((frozen.placements as Placements).boxes).toEqual({
       alpha: { x: 1, y: 1 },
       beta: { x: 5, y: 5 },
     });
-    expect(frozen.placements.wts).toEqual({ "beta:main": { ang: 1, dist: 2 } });
   });
 });

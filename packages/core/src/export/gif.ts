@@ -36,11 +36,14 @@ export async function renderGifBlob<A extends ActLike, S, P>(
   const k = Math.min(1, MAX_EDGE / Math.max(opts.width, opts.height));
   const width = Math.round(opts.width * k);
   const height = Math.round(opts.height * k);
+  // `--dx-bg` always resolves — the editor stylesheet ships a default for
+  // it — but an unstyled document would hand back "", which is not
+  // nullish and would slip past `??` into fillStyle as a no-op.
   const background =
-    opts.background ??
+    opts.background ||
     getComputedStyle(document.documentElement)
-      .getPropertyValue("--vp-c-bg")
-      .trim() ??
+      .getPropertyValue("--dx-bg")
+      .trim() ||
     "#ffffff";
 
   const encoder = GIFEncoder();

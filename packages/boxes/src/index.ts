@@ -2,18 +2,19 @@
  * The boxes reference pack — the smallest honest language.
  *
  * Boxes exist, link, unlink, leave, and (the one event) pulse. The pack's
- * whole job is to be dumbshow's SECOND consumer: every contract hook the
- * daft pack implements richly, boxes implements minimally, so anything
- * daft-shaped that leaks into the generic machinery fails here first.
+ * whole job is to be dumbshow's SECOND consumer: every contract hook a
+ * production pack implements richly, boxes implements minimally, so
+ * anything pack-shaped that leaks into the generic machinery fails here
+ * first.
  *
  * The pack types itself against the real contract — `DiagramLanguage`
  * from `../src` — so the whole hook surface typechecks here.
  *
- * Document format v1 carries the daft-shaped seed schema, so the boxes
- * pack keeps seeds empty (world() ignores the seed) — a generic seed
- * schema is the planned document-version bump. Placements it does use:
- * `placements.repos[name]` pins a box where the author dragged it, read
- * into the world (`pins`) so cameras and acts agree.
+ * Under document format v2 both halves of a document's pack-owned JSON are
+ * this pack's own: a seed of `{ boxes, links }` declaring the board before
+ * the timeline runs, and placements of `{ boxes }` pinning where the author
+ * dragged each one. Core stores and migrates both without reading them, so
+ * the schemas, their validation, and every edit to them live here.
  */
 
 import {
@@ -21,9 +22,8 @@ import {
   type DiagramLanguage,
   type OpSpecOf,
   type ParseOutcomeOf,
-  type Placements,
   type StepDef,
-  setRepoPlacement,
+  setPlacements,
   type VerbArgs,
 } from "@dumbshow/core";
 
@@ -66,13 +66,135 @@ function emptyWorld(): World {
   return { boxes: [], links: [], pins: {} };
 }
 
-/** The world's pins, read from the document's placements (repos slot). */
+/* ------------------------- the document schemas --------------------------- */
+
+/** A box the story opens with; x/y are the author's spot, if it has one. */
+export interface SeedBox {
+  name: string;
+  x?: number;
+  y?: number;
+}
+
+/** This pack's document seed: the board before the timeline runs. */
+export interface Seed {
+  boxes: SeedBox[];
+  links: [string, string][];
+}
+
+/** This pack's document placements: where the author dragged each box. */
+export interface Placements {
+  boxes: Record<string, { x: number; y: number }>;
+}
+
+/** Reject one document's JSON. The document model prefixes the message. */
+function bad(msg: string): never {
+  throw new Error(msg);
+}
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+function isFinite2(v: unknown): v is number {
+  return typeof v === "number" && Number.isFinite(v);
+}
+
+function emptySeed(): Seed {
+  return { boxes: [], links: [] };
+}
+
+function parseSeed(raw: unknown): Seed {
+  if (!isRecord(raw)) bad("the seed is not an object");
+  if (!Array.isArray(raw.boxes)) bad("seed.boxes is not a list");
+  const boxes: SeedBox[] = [];
+  for (const item of raw.boxes as unknown[]) {
+    if (!isRecord(item) || typeof item.name !== "string" || !item.name.trim())
+      bad("a seed box has no name");
+    boxes.push({
+      name: item.name as string,
+      ...(isFinite2(item.x) ? { x: item.x } : {}),
+      ...(isFinite2(item.y) ? { y: item.y } : {}),
+    });
+  }
+  if (!Array.isArray(raw.links)) bad("seed.links is not a list");
+  const links: [string, string][] = [];
+  for (const item of raw.links as unknown[]) {
+    if (
+      !Array.isArray(item) ||
+      item.length !== 2 ||
+      typeof item[0] !== "string" ||
+      typeof item[1] !== "string"
+    )
+      bad("a seed link is not a [box, box] pair");
+    links.push([item[0] as string, item[1] as string]);
+  }
+  return { boxes, links };
+}
+
+function emptyPlacements(): Placements {
+  return { boxes: {} };
+}
+
+function parsePlacements(raw: unknown): Placements {
+  if (!isRecord(raw)) bad("placements is not an object");
+  const boxes: Placements["boxes"] = {};
+  if (raw.boxes !== undefined) {
+    if (!isRecord(raw.boxes)) bad("placements.boxes is not an object");
+    for (const [name, p] of Object.entries(raw.boxes)) {
+      if (!isRecord(p) || !isFinite2(p.x) || !isFinite2(p.y))
+        bad(`the placement for box ${name} is malformed`);
+      boxes[name] = { x: p.x, y: p.y };
+    }
+  }
+  return { boxes };
+}
+
+/** The world's pins, read from the document's placements. */
 function pinsOf(placements: unknown): World["pins"] {
   const pins: World["pins"] = {};
-  const repos = (placements as Placements | undefined)?.repos ?? {};
-  for (const [name, p] of Object.entries(repos))
+  const boxes = (placements as Placements | undefined)?.boxes ?? {};
+  for (const [name, p] of Object.entries(boxes))
     pins[name] = { x: p.x, y: p.y };
   return pins;
+}
+
+/**
+ * The pre-story world a seed declares. A pin beats the seed's own spot,
+ * which beats the deterministic fallback — the same order `addStep` uses,
+ * so a seeded box and a timeline-born one land the same way.
+ *
+ * Declared links survive even when an end is missing: the timeline may
+ * create it later, and the draw pass skips a link until both ends exist.
+ */
+function worldFromSeed(seed: unknown, placements: unknown): World {
+  const declared = seed as Seed | undefined;
+  const world: World = { boxes: [], links: [], pins: pinsOf(placements) };
+  for (const box of declared?.boxes ?? []) {
+    const fallback = SPOTS[world.boxes.length % SPOTS.length];
+    const pin = world.pins[box.name];
+    world.boxes.push({
+      name: box.name,
+      x: pin?.x ?? box.x ?? fallback.x,
+      y: pin?.y ?? box.y ?? fallback.y,
+    });
+  }
+  for (const [a, b] of declared?.links ?? []) world.links.push([a, b]);
+  return world;
+}
+
+/**
+ * The opening frame: every seeded box and link drawn as scene, no terminal
+ * lines. Null when the seed declared nothing — then the story simply starts
+ * with its first timeline step.
+ */
+function seedStep(world: World): Step | null {
+  if (!world.boxes.length && !world.links.length) return null;
+  const beats: Step["beats"] = [];
+  for (const box of world.boxes)
+    beats.push({ act: { kind: "box", name: box.name, x: box.x, y: box.y } });
+  for (const [a, b] of world.links) beats.push({ act: { kind: "link", a, b } });
+  beats.push({ pause: 0.4 });
+  return { title: "Scene", cam: camFor(world), beats, silent: true };
 }
 
 function findBox(world: World, name: string): WorldBox | undefined {
@@ -177,8 +299,15 @@ interface Palette {
   halo: string;
 }
 
+/**
+ * The theming contract says dark keys off a `dark` class on <html>, and the
+ * editor chrome reads it that way — so a pack must too. Reading
+ * prefers-color-scheme instead leaves the canvas in the old palette whenever
+ * the theme is toggled rather than inherited from the OS, which is exactly
+ * what a host's dark-mode switch does.
+ */
 function readPalette(): Palette {
-  const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+  const dark = document.documentElement.classList.contains("dark");
   return dark
     ? { ink: "#e5e2dc", faint: "#8a877f", accent: "#4fb3bf", halo: "#1b1a18" }
     : { ink: "#2c2a26", faint: "#a09d95", accent: "#12777f", halo: "#f5f3ef" };
@@ -529,36 +658,31 @@ function squareMarker(
 }
 
 /**
- * Seeds stay empty under document format v1 (its seed schema belongs to
- * the daft pack); placements pin boxes — the one author geometry boxes
- * have, which is what lets a node drag move them.
+ * Both halves of the document's pack-owned JSON are this pack's own: a seed
+ * of boxes and links, and placements pinning where each box was dragged.
  */
 export const BOXES_PACK: DiagramLanguage<World, Act, Scene, Step> = {
   ops: OPS,
   emptyWorld,
   scene: { createScene, applyAct, drawScene, camFor, readPalette, pick },
   seed: {
-    world: (_seed: unknown, placements: unknown): World => ({
-      ...emptyWorld(),
-      pins: pinsOf(placements),
-    }),
-    step: (world: World): Step => ({
-      title: "Scene",
-      cam: camFor(world),
-      beats: [{ pause: 0.4 }],
-      silent: true,
-    }),
+    empty: emptySeed,
+    parse: parseSeed,
+    world: worldFromSeed,
+    step: seedStep,
   },
   placements: {
+    empty: emptyPlacements,
+    parse: parsePlacements,
     // Positions flow through the world (pins), so steps need no patching.
     patchStep: (): void => {},
     fromCompiled: (compiled): Placements => {
-      const repos: Placements["repos"] = {};
+      const boxes: Placements["boxes"] = {};
       for (const { act } of compiled.events) {
         const a = act as Act;
-        if (a.kind === "box") repos[a.name] = { x: a.x, y: a.y };
+        if (a.kind === "box") boxes[a.name] = { x: a.x, y: a.y };
       }
-      return { repos, wts: {} };
+      return { boxes };
     },
   },
   entities: {
@@ -572,17 +696,20 @@ export const BOXES_PACK: DiagramLanguage<World, Act, Scene, Step> = {
     dragOverlay: (sel: unknown) =>
       squareMarker((sel as Hit).name, 2.5, 1, 5, true),
     // A dragged box pins where it lands; nothing else drops on this canvas.
-    canvasDrop: (drop) =>
-      drop.source.kind === "node"
-        ? {
-            doc: setRepoPlacement(
-              drop.doc as ComposerDoc,
-              (drop.source.hit as Hit).name,
-              { x: Math.round(drop.wx), y: Math.round(drop.wy) },
-            ),
-            select: drop.source.hit,
-          }
-        : null,
+    // Core cannot edit a key of this pack's placements, so the pack builds
+    // the next value and writes the whole thing back.
+    canvasDrop: (drop) => {
+      if (drop.source.kind !== "node") return null;
+      const doc = drop.doc as ComposerDoc;
+      const hit = drop.source.hit as Hit;
+      const pinned: Placements = {
+        boxes: {
+          ...(doc.placements as Placements).boxes,
+          [hit.name]: { x: Math.round(drop.wx), y: Math.round(drop.wy) },
+        },
+      };
+      return { doc: setPlacements(doc, pinned), select: hit };
+    },
   },
   parseCommand,
   shellVerb: (text: string): string => (text.startsWith("box") ? "box" : ""),

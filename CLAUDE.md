@@ -19,12 +19,13 @@ two private projects:
   other) editor would be a sibling package of the same shape; there is no
   umbrella package and the core never re-exports a framework.
 - `packages/boxes` → `@dumbshow/boxes`, private: the **boxes** reference
-  pack, the second consumer that keeps the contract honest (boxes pin
-  through `placements.repos`, so node drags and every marker hook are
-  exercised there too). Shared by the test suite and the harness apps.
+  pack, the second consumer that keeps the contract honest (it owns a seed of
+  `{ boxes, links }` and placements of `{ boxes }`, so document parsing, node
+  drags, and every marker hook are exercised there too). Shared by the test
+  suite and the harness apps.
 - `apps/harness-vue`: the Vue editor mounted with boxes (`mise run dev`).
 
-The production pack (daft's) lives in the daft repo, which also carries the
+The production pack lives in its own host repo, which also carries the
 Playwright/golden test net that pins this machinery's behavior; do not break
 parity casually.
 
@@ -58,7 +59,7 @@ parity casually.
   rewrites both at pack time and the build job asserts no `workspace:`
   survives in a tarball.
 
-## Hard rules (proven by the daft test net)
+## Hard rules (proven by the production host's test net)
 
 - **The seam is imports.** Nothing under `packages/core/src/` or
   `packages/vue/src/` may name a pack concept or import a host (the
@@ -69,11 +70,29 @@ parity casually.
   hook, extend `packages/boxes/src/index.ts` in the same change — the boxes
   pack implementing every hook is the honesty check.
 - **One document, no modes.** A document is `{ seed, timeline, placements }`
-  (`packages/core/src/editor/doc.ts`, versioned). The seed renders as scene only; placements
-  are authoring data, never timeline events; a still is a document whose
-  timeline never played. Format v1 deliberately carries the daft-shaped seed
-  schema — a generic seed is a document-version bump owned here (the boxes
-  pack keeps seeds empty until then).
+  (`packages/core/src/editor/doc.ts`, versioned — **v2**). The seed renders as
+  scene only; placements are authoring data, never timeline events; a still is
+  a document whose timeline never played.
+- **The seed and the placements belong to the pack** (format v2). They are
+  pack-defined JSON: core stores, serializes, and migrates them without
+  reading their shape, and hands them to the pack through
+  `seed.empty/parse/world/step` and
+  `placements.empty/parse/patchStep/fromCompiled`. They cross document-version
+  bumps VERBATIM — a pack that evolves its own schema versions it inside its
+  own JSON. That is what made v1 → v2 a no-op for the data: v1's seed and
+  placements already held the writing pack's shape and nobody else's, so only
+  ownership moved. What follows from it: `emptyDoc(lang)` and
+  `parseDoc(json, lang)` take the pack (`DocSchema`, which any
+  `DiagramLanguage` satisfies structurally); a pack's parse error surfaces as
+  the document's own parse failure; core offers no key-level helper for
+  either half, only `setSeed` and `setPlacements`, which replace the whole
+  value (a pack that pins geometry computes the next value itself — the
+  freeze-before-rename merge is the pack's, not core's); and `seed.step()`
+  returning null is how a pack says its seed declares nothing, so the story
+  has no opening frame. A version bump must also carry the localStorage
+  draft: `loadDraft` reads the previous version's slot once, migrates it,
+  re-saves, and retires the old key — the slot is the author's only copy
+  between sessions.
 - **Everything derives.** `editor/derive.ts` (core) is the one road from document
   to playable steps; broken ops skip cleanly (`mapping` -1). Never build
   steps for the editor another way.
@@ -121,23 +140,66 @@ parity casually.
   The shapes those props take (`BackLink`, `ExportEntry`, the selection
   types) are `@dumbshow/core` exports so packs type against them without
   the framework.
-- **The layout is locked** (settled in a design round with the daft docs —
-  do not rearrange): LEFT the timeline over the docked catalog, each with a
+- **The layout is locked** (settled in a design round with the production
+  host — do not rearrange): LEFT the timeline over the docked catalog, each with a
   minimize chevron and edge-flap restore, both-minimized (or the direct
   control) collapsing the sidepane; CENTER canvas over the shell; RIGHT the
   host's inspector over the always-visible attributes form; BOTTOM the
   player bar only, hidden by the toolbar's Scrubber toggle.
 
-## Theming contract (v0)
+## Theming contract (v1)
 
 `packages/core/src/editor/editor.css` (shipped as `@dumbshow/core/style.css`)
-reads these host tokens: `--vp-c-bg`, `--vp-c-bg-soft`,
-`--vp-c-divider`, `--vp-c-text-1/2/3`, `--vp-font-family-base/mono`,
-`--daft-gold`, `--daft-gold-text`, `--daft-rust`, `--daft-rust-text`; dark
-styling keys off a `dark` class on `<html>`. The names are inherited from
-the daft docs host and renaming them to a dumbshow-owned prefix (with
-fallbacks) is a planned follow-up coordinated with that host —
-`apps/harness-vue/index.html` documents the set by defining it.
+resolves every color, font, and tone through ONE public token set, all
+`--dx-` prefixed, and ships a default for each — a host that declares nothing
+still gets a coherent editor in both themes.
+
+| Token | Light | Dark |
+| --- | --- | --- |
+| `--dx-bg` | `#ffffff` | `#1b1b1f` |
+| `--dx-bg-soft` | `#f6f6f7` | `#202127` |
+| `--dx-divider` | `#e2e2e3` | `#2e2e32` |
+| `--dx-text-1` | `#3c3c43` | `#dfdfd6` |
+| `--dx-text-2` | `#67676c` | `#98989f` |
+| `--dx-text-3` | `#929295` | `#6a6a71` |
+| `--dx-font` | `ui-sans-serif, system-ui, sans-serif` | — |
+| `--dx-font-mono` | `ui-monospace, "SF Mono", Menlo, monospace` | — |
+| `--dx-accent` | `#bd8c26` | `#d1a54a` |
+| `--dx-accent-text` | `#9a7115` | `#e0b866` |
+| `--dx-on-accent` | `#241b09` | — |
+| `--dx-warn` | `#c75c1e` | `#d9752f` |
+| `--dx-warn-text` | `#b14e14` | `#e08a4a` |
+| `--dx-teal` / `--dx-purple` | `#1b9aaa` / `#8a63d2` | — |
+| `--dx-teal-text` | `#0e7280` | `#3fbccb` |
+| `--dx-purple-text` | `#6d48c0` | `#ab8ce4` |
+| `--dx-sel` | `color-mix(in srgb, var(--dx-accent) 12%, var(--dx-bg))` | — |
+
+Four rules make that work, and none of them is incidental:
+
+- **Defaults sit behind `:where(html)` / `:where(html.dark)`** — specificity
+  ZERO. Any host declaration (`:root { … }`, specificity 0,0,1) wins no
+  matter which stylesheet loads first. Defaults scoped to `.dx-app` would
+  instead defeat a host's `:root` override.
+- **Both default blocks are specificity 0, so source order decides between
+  them**: the dark block must stay AFTER the light one in the file.
+- **The tokens land on `<html>` itself**, so a pack's `readPalette()` can
+  read them off `document.documentElement` — which is how packs actually
+  read a theme.
+- **`--dx-sel` stays an expression, not a literal**, so a host that overrides
+  only `--dx-accent` still gets a matching selection tint.
+- **`--dx-on-accent` is the ink on an accent fill** — distinct from
+  `--dx-accent-text`, which is the accent used AS text on the page. A host that
+  overrides `--dx-accent` owns this one too: what reads on the default gold
+  (`#241b09`, 5.6:1) fails on a blue, and the right answer can differ per theme.
+  `apps/harness-vue/index.html` shows both halves. Nothing else in the chrome
+  puts text on an accent fill — the other eight accent surfaces are dots,
+  notches, carets and knobs.
+
+Dark styling keys off a `dark` class on `<html>` (keep that convention). A
+host that overrides a token owns it in BOTH themes — its declaration outranks
+the dark default too. `apps/harness-vue/index.html` overrides exactly the
+accent pair and lets the rest fall through, so the harness proves the
+defaults and the override path at once.
 
 ## Toolchain
 
@@ -169,10 +231,12 @@ are linted and typechecked too.
 
 `tests/*.test.ts` is the workspace suite (vitest, node environment,
 `vitest.config.ts`): it imports `@dumbshow/core` and `@dumbshow/boxes` by
-name — the aliases resolve them to sources — and covers the document model,
-mutations, derive, the engine compiler, the transcript, the catalog, and
-the boxes pack's honesty (every optional hook implemented; every verb
-round-trips through its shell). Core behavior is tested through the
+name — the aliases resolve them to sources — and covers the document model
+(including v1 → v2 migration, proven verbatim against a stub pack whose
+parsers are the identity), draft storage across a format bump, mutations,
+derive, the engine compiler, the transcript, the catalog, and the boxes
+pack's honesty (every optional hook implemented; both document schemas
+parsed and rejected; every verb round-trips through its shell). Core behavior is tested through the
 reference pack on purpose; there are no per-package test directories yet.
 `tests/__snapshots__/boxes-board.golden.json` is a committed golden of a
 scripted board derived + compiled — byte-for-byte timing, mapping, and step
@@ -193,6 +257,16 @@ authors are exempt) and `changeset` (a PR that touches `packages/core/`,
 `packages/vue/`, or the lockfile must add a `.changeset/*.md` — skipped for
 the release bot's own PR, Dependabot, and the `skip-changeset` label). The master ruleset requires all
 six by job name: rename a job here and the ruleset in the same change.
+
+**Pull requests** follow `.claude/skills/open-pr/SKILL.md` — the repo's own
+skill, which overrides the generic one. Two rules beyond the obvious: the
+squash merge uses the PR title and body verbatim, so the body is written to be
+read in `git log`; and **a change with visual expression carries before/after
+images** — screenshots for a static change, a GIF when the point of the change
+is that it moves. The "before" is captured from a throwaway
+`daft start --fork <merge-base>` worktree (never in the `master` worktree, and
+removed straight after), and images are published on the orphan `assets`
+branch under `pr-<N>/`, which triggers no CI.
 
 **Releases** are changesets-driven (`.changeset/`, `release.yml`):
 

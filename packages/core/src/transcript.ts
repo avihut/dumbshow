@@ -1,5 +1,5 @@
 /**
- * daft terminal transcript — the shell projection of a compiled timeline.
+ * The terminal transcript — the shell projection of a compiled timeline.
  *
  * Given a compiled script's term lines and a clock value, compute what the
  * shell shows at that moment: how many lines are fully visible, and the
