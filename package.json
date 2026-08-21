@@ -1,6 +1,6 @@
 {
   "name": "@avihut/dumbshow",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A semantic-animation composer: language packs define entities, verbs, and renderings; dumbshow provides the document model, deterministic player, editor, viewers, and exports.",
   "license": "FSL-1.1-MIT",
   "type": "module",
