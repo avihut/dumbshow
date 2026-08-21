@@ -95,7 +95,10 @@ export function docSlug(doc: ComposerDoc): string {
   const slug = doc.title
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    // The collapse above turns every RUN of non-alphanumerics into a single
+    // dash, so at most one can sit at either edge — matching `-+` here would
+    // only add a quantifier that can never bite on more than one character.
+    .replace(/^-|-$/g, "");
   return slug || "scenario";
 }
 
