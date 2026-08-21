@@ -1,2 +1,3 @@
-relations:
-  - url: git@github.com:avihut/daft.git
+# daft configuration for this repository — worktree layout and hooks keep their
+# defaults. Relations to other repositories are declared from their side, not
+# from here.
