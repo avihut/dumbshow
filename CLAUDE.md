@@ -106,3 +106,25 @@ already sets public access). `pnpm build` produces `dist/` (ESM, vue
 externalized, gifenc bundled, d.ts via vue-tsc, `dist/dumbshow.css` exported
 as `./style.css`). License is FSL-1.1-MIT; contributions need a DCO
 sign-off (`git commit -s`).
+
+Release process — manual today, no CI (there are no GitHub workflows yet; the
+daft docs' Playwright/golden suite run through its `DUMBSHOW_SRC` source link
+is the regression net):
+
+1. Land the work on master (feature branch, DCO-signed conventional
+   commits; `mise run lint`, `mise run typecheck`, `mise run build` green).
+2. Bump `package.json` (0.x: a contract or document-format change is a
+   minor bump, anything else a patch) in its own `chore: release X.Y.Z`
+   commit.
+3. `mise run build` on master, then `pnpm publish` — needs the maintainer's
+   npm 2FA in a real terminal (the build's `vite build && vue-tsc` order
+   matters: vue-tsc first would lose its d.ts to vite's emptyOutDir).
+4. Tag the release commit `vX.Y.Z` (annotated — `tag.gpgsign` makes tags
+   annotated, so pass `-m`) and push master + tags.
+5. In daft: `cd docs && bun add --exact @avihut/dumbshow@X.Y.Z` (the package
+   is excluded from the bun cooldown), run the suite against the registry
+   build, commit the pin.
+
+Planned: a CI workflow (lint/typecheck/build on push and PR), a tag-driven
+publish with npm trusted publishing (OIDC, no 2FA dance), and the copied
+`editor.*` specs so the package carries its own net.
