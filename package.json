@@ -17,7 +17,7 @@
     "@biomejs/biome": "2.5.8",
     "@changesets/changelog-github": "1.0.0",
     "@changesets/cli": "3.0.0",
-    "@types/node": "24.13.3",
+    "@types/node": "26.2.0",
     "@vitejs/plugin-vue": "6.0.8",
     "typescript": "6.0.3",
     "vite": "8.2.1",
