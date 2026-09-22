@@ -12,6 +12,6 @@
     "@dumbshow/boxes": "workspace:*",
     "@dumbshow/core": "workspace:*",
     "@dumbshow/vue": "workspace:*",
-    "vue": "3.5.41"
+    "vue": "3.5.42"
   }
 }
